@@ -1,0 +1,18 @@
+# dbt profiles for Vega. Default target = DuckDB (local, fast). BigQuery is the documented swap
+# (config.yaml `warehouse`). Keep both here so the cloud story is one `--target bigquery` away.
+vega:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: ../vega.duckdb
+      threads: 4
+      extensions: [parquet]
+
+    bigquery:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('VEGA_BQ_PROJECT', '') }}"
+      dataset: vega
+      location: EU
+      threads: 4

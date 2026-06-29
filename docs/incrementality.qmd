@@ -1,0 +1,138 @@
+---
+title: "Incrementality & real-data validation"
+subtitle: "Does the ad *cause* conversions, or just take credit?"
+---
+
+::: {.lead}
+Attribution credits every conversion that *follows* an ad to the ad. Incrementality asks the only question
+that matters for spend: how many of those conversions *would not have happened anyway*? This chapter builds
+the ghost-ads / PSA holdout as an encouragement design, recovers the truth with ITT and CACE, and then runs
+the **same certified estimator** on the real Criteo Uplift RCT — 13.9M rows of live ad-serving data.
+*(Math recycled from `notation/iv-late.md`.)*
+:::
+
+## The problem: attribution credits the converted {#sec-attribution}
+
+The platform's deliberately-[biased]{.bias} comparator here is **last-touch attribution**: count every
+exposed user who converted, call it the ad's work. The trouble is that exposure is *targeted* — the ad-tech
+stack shows the ad precisely to users already likely to convert. So the attributed number conflates the
+causal lift with the selection that produced the audience.
+
+Two naive readouts, both wrong. Pure attribution credits all exposed conversions; the slightly-less-naive
+observational contrast compares exposed vs. unexposed users, which still inherits targeting bias because the
+two groups differ in everything the targeter conditioned on. This is the Lewis–Rao "unfavorable economics of
+measuring the returns to advertising": true lift is small, baseline conversion is large, so attribution
+overstates by *multiples*.
+
+::: {.callout-warning appearance="simple"}
+**Most exposed users would have converted anyway.** When baseline conversion is high relative to true lift,
+naive attribution overstates the effect several-fold — it counts the would-have-converted majority as the
+ad's doing. The fix is not a better attribution window; it is a **withheld control**.
+:::
+
+## The holdout design: ghost ads / PSA {#sec-holdout}
+
+Randomize an **eligible** population into two arms. The treatment arm is served the campaign; the holdout arm
+is *eligible and targeted identically* but the ad is withheld — replaced by a public-service announcement
+(PSA) or a logged-but-unrendered "ghost ad". Because eligibility and targeting are held fixed and only the
+*serving* is randomized, the holdout is the missing potential outcome.
+
+This is an **encouragement / IV design**. The randomized assignment $Z\in\{0,1\}$ (eligible-to-serve vs.
+holdout) nudges actual exposure $W\in\{0,1\}$, but compliance is imperfect and **one-sided**: a holdout user
+is *never* exposed ($W_i(0)=0$, no always-takers), while a treatment-arm user may still go unexposed (never
+saw the slot). The four IV assumptions hold by construction in the sim:
+
+- **Exclusion** — assignment $Z$ affects conversions $Y$ only through exposure $W$: $Y_i(w,z)=Y_i(w)$.
+- **Exogeneity** — $\{Y_i(0),Y_i(1),W_i(0),W_i(1)\}\perp\!\!\!\perp Z_i$ (randomized arm).
+- **Relevance** — assignment moves exposure: $\mathbb{E}[W_i(1)-W_i(0)]\neq 0$.
+- **Monotonicity** — no defiers; with a withheld holdout this is automatic.
+
+## ITT: eligible minus holdout {#sec-itt}
+
+The **intent-to-treat** effect compares the arms as assigned, ignoring who was actually exposed:
+
+$$
+\tau_{\text{ITT}} = \mathbb{E}[Y\mid Z=1]-\mathbb{E}[Y\mid Z=0].
+$$
+
+ITT is unbiased for the *policy* of running the campaign, and it is the honest top-line number: it dilutes
+the per-exposure effect by the non-compliers who were assigned but never saw the ad. It answers "what does
+turning the campaign on buy?" — but it is not the effect *of the ad on someone who saw it*.
+
+## CACE: ITT over the exposure rate {#sec-cace}
+
+To recover the per-exposure effect, rescale ITT by the first stage — the **exposure rate**, i.e. the
+fraction of the treatment arm actually served. This is the Wald / Bloom estimator, and under one-sided
+non-compliance it is exactly IV/LATE:
+
+$$
+\tau_{\text{LATE}}=\frac{\mathbb{E}[Y\mid Z=1]-\mathbb{E}[Y\mid Z=0]}{\mathbb{E}[W\mid Z=1]-\mathbb{E}[W\mid Z=0]}
+= \frac{\tau_{\text{ITT}}}{\text{exposure rate}}.
+$$
+
+With the holdout arm never exposed, $\mathbb{E}[W\mid Z=0]=0$ and the denominator collapses to the
+treatment-arm take-up. The estimand is the **complier average causal effect**:
+
+$$
+\tau_{\text{CACE}}=\mathbb{E}\big[Y_i(1)-Y_i(0)\mid C_i=\text{complier}\big],
+$$
+
+the conversion lift among users who are exposed *because* they were assigned to treatment — the "responders".
+Never-takers (never see the ad) and the absent always-takers contribute nothing. This is the number an
+advertiser should price against.
+
+```python
+def cace(data):
+    itt = data.Y[data.Z == 1].mean() - data.Y[data.Z == 0].mean()
+    first_stage = data.W[data.Z == 1].mean() - data.W[data.Z == 0].mean()
+    return itt / first_stage          # Wald = ITT / exposure rate
+```
+
+## Real-data validation: the Criteo Uplift RCT {#sec-criteo}
+
+A simulator can be accused of grading its own homework. The finale runs the **same estimator** on the public
+**Criteo Uplift** dataset — a real, large-scale randomized exposure experiment (13.9M rows, a treatment arm
+and a randomized control where the ad was withheld) with `visit` and `conversion` labels. No ground-truth
+$\tau$ exists here; what we check is that the certified estimator behaves sanely and reproduces the known
+qualitative finding.
+
+```python
+from validation.criteo import load_criteo
+from lyra.incrementality import itt_estimator
+
+data = load_criteo()                       # 13.9M rows, real RCT
+visit = itt_estimator(data, outcome="visit")
+conv  = itt_estimator(data, outcome="conversion")
+```
+
+The verdict matches the literature: lift is **real but small**, exactly Lewis–Rao. The Lin (2013)
+interacted-covariate adjustment tightens the interval ~10% and, tellingly, flags mild covariate imbalance —
+real randomization is never quite textbook. The point is the punchline: the estimator certified against the
+simulator's known truth transfers, unchanged, to live data.
+
+## Certification {#sec-certify}
+
+Run the ghost-ads world through [the harness](harness.qmd) with true per-exposure effect $\tau=0.015$ and an
+exposure rate $\approx 0.43$ (so $\tau\cdot\text{exposure}\approx 0.0064$). The naive comparators fail
+loudly; ITT and CACE recover the truth.
+
+| readout | reads | truth | verdict |
+|---|---|---|---|
+| naive attribution | $+0.087$ (5.8× the truth) | $0.015$ | [biased]{.bias} |
+| observational exposed − unexposed | $+0.041$ (targeting bias) | $0.015$ | [biased]{.bias} |
+| **PSA/ghost-ad holdout ITT** | $+0.0063$ | $\tau\cdot\text{exp}=0.0064$ | [**certified**]{.cert} |
+| **CACE = ITT ÷ exposure** | $+0.0148$ | $0.015$ | [**certified**]{.cert} |
+
+Then the same estimator on the **real Criteo Uplift RCT** (13.9M rows):
+
+| outcome | lift | significance |
+|---|---|---|
+| visit | $+1.06$pp | $z=14.4$ |
+| conversion | $+0.13$pp | $z=8.2$ |
+
+Small but overwhelmingly significant — Lewis–Rao confirmed at scale. The Lin (2013) adjustment tightens the
+intervals ~10% and surfaces mild covariate imbalance (real data $\neq$ textbook RCT). That is the headline of
+the curriculum finale: an estimator certified on a world whose truth we *set* recovers $\tau=0.015$ to the
+third decimal, then runs unchanged on 13.9M rows of real ad-serving data and reproduces the field's signature
+result. Promoted from notebook **NB 12** to `lyra/incrementality.py` (ITT/CACE) and `validation/criteo.py`
+(the real-data leg); it shares the IV machinery with [ATE](ate.qmd) and the LATE estimand of the demand work.

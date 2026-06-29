@@ -1,0 +1,46 @@
+/*-- scss:defaults --*/
+
+// Ocean palette — matches dannyredel.github.io
+$primary:        #122140;   // deep navy
+$link-color:     #1e6091;   // ocean accent
+$body-color:     #1c2433;
+
+// Fonts: Fraunces (headings) + Commissioner (body), via Google Fonts
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Commissioner:wght@300;400;500;600&display=swap');
+
+$font-family-sans-serif: "Commissioner", system-ui, -apple-system, sans-serif;
+$headings-font-family:   "Fraunces", Georgia, serif;
+
+$h1-font-size: 2.1rem;
+$h2-font-size: 1.55rem;
+$h3-font-size: 1.2rem;
+
+/*-- scss:rules --*/
+
+h1, h2, h3, h4 {
+  font-family: $headings-font-family;
+  letter-spacing: -0.01em;
+}
+
+// Part dividers and active sidebar item in the accent
+.sidebar-item-text.active,
+.sidebar nav a.active {
+  color: $link-color;
+  font-weight: 600;
+}
+
+// "Platform problem" callout reads as the book's signature element
+div.callout-note.callout {
+  border-left-color: $link-color;
+}
+
+// Code a touch calmer
+pre.sourceCode {
+  border-radius: 6px;
+  border: 1px solid #e6e9ef;
+}
+
+// Tasteful caps for part headers in the body
+.quarto-title-block .title {
+  font-family: $headings-font-family;
+}

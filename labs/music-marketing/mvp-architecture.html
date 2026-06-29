@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MVP Architecture · Causal Music-Marketing Measurement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1d2e;          /* deep indigo ink */
+    --ink-soft:#3a3f57;
+    --paper:#f4f2ec;        /* cool paper */
+    --paper-card:#fbfaf6;
+    --line:#d9d5c8;
+    --line-soft:#e7e3d8;
+    --signal:#e0922f;       /* amber — incremental / the causal core */
+    --signal-tint:#f7e9d3;
+    --baseline:#4f6d8f;     /* steel blue — baseline / data plumbing */
+    --baseline-tint:#e1e8ef;
+    --good:#3f7d5a;
+    --text:#1a1d2e;
+    --text-soft:#5b5f72;
+    --mono:"IBM Plex Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--text);font-family:"Hanken Grotesk",sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;padding:0 0 80px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+
+  header.top{padding:48px 0 30px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--signal);font-weight:500}
+  h1{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(30px,4.4vw,50px);letter-spacing:-.015em;line-height:1.05;margin:14px 0 14px}
+  .sub{font-size:clamp(15px,1.6vw,18px);color:var(--text-soft);max-width:66ch}
+  .sub b{color:var(--text);font-weight:600}
+
+  .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:26px;font-size:13px;color:var(--text-soft)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  h2.sec{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(21px,2.4vw,28px);letter-spacing:-.01em;margin:56px 0 5px}
+  .sec-note{color:var(--text-soft);font-size:14.5px;max-width:72ch;margin-bottom:24px}
+
+  /* ── horizontal pipeline ── */
+  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch;position:relative}
+  .stage{padding:0 11px;position:relative}
+  .stage:not(:last-child)::after{content:"→";position:absolute;right:-9px;top:30px;color:var(--baseline);font-size:19px;z-index:2}
+  .stage-h{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-soft);font-weight:600;margin-bottom:4px}
+  .stage-sub{font-size:11.5px;color:var(--text-soft);margin-bottom:12px;min-height:30px}
+  .node{background:var(--paper-card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;font-weight:500}
+  .node small{display:block;font-weight:400;color:var(--text-soft);font-size:11.5px;margin-top:2px;font-family:var(--mono)}
+  .node.y{border-left:3px solid var(--baseline)}
+  .node.x{border-left:3px solid var(--signal)}
+  .node.ctx{border-left:3px solid var(--line)}
+  .node.core{background:var(--signal-tint);border-color:#e9cfa3;border-left:3px solid var(--signal)}
+  .node.out{border-left:3px solid var(--ink)}
+  .grp-label{font-size:10.5px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-soft);margin:10px 0 5px}
+  .grp-label:first-child{margin-top:0}
+
+  @media(max-width:860px){
+    .flow{grid-template-columns:1fr;gap:8px}
+    .stage{padding:14px 0;border-top:1px solid var(--line-soft)}
+    .stage:not(:last-child)::after{content:"↓";right:auto;left:0;top:auto;bottom:-12px}
+  }
+
+  /* ── method detail ── */
+  .methods{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:6px}
+  .method{background:var(--paper-card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .method.hero{background:var(--signal-tint);border-color:#e9cfa3}
+  .method h3{font-family:"Fraunces",serif;font-weight:600;font-size:18px;margin-bottom:4px}
+  .method .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--signal);font-weight:600}
+  .method p{font-size:13.5px;color:var(--text-soft);margin-top:8px}
+  .method ul{list-style:none;margin-top:10px;font-size:12.5px;font-family:var(--mono);color:var(--ink-soft)}
+  .method li{padding:3px 0 3px 14px;position:relative}
+  .method li::before{content:"·";position:absolute;left:2px;color:var(--signal);font-weight:700}
+  @media(max-width:860px){.methods{grid-template-columns:1fr}}
+
+  /* ── schema / ER ── */
+  .schema{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:8px}
+  .schema-col h4{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-soft);margin-bottom:10px}
+  .tbl{background:var(--paper-card);border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:14px}
+  .tbl-h{padding:9px 13px;font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+  .tbl-h .kind{font-size:9.5px;padding:2px 6px;border-radius:4px;letter-spacing:.06em;text-transform:uppercase}
+  .tbl.dim .tbl-h{background:var(--baseline-tint);color:#274059}
+  .tbl.dim .kind{background:var(--baseline);color:#fff}
+  .tbl.fact .tbl-h{background:#ece8dd;color:var(--ink)}
+  .tbl.fact .kind{background:var(--ink);color:#fff}
+  .tbl.model .tbl-h{background:var(--signal-tint);color:#7a4d12}
+  .tbl.model .kind{background:var(--signal);color:#fff}
+  .tbl ul{list-style:none;padding:7px 13px 11px}
+  .tbl li{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);padding:2.5px 0;display:flex;justify-content:space-between;gap:10px}
+  .tbl li .t{color:var(--text-soft);font-size:10.5px}
+  .pk{color:var(--signal);font-weight:600}
+  .fk{color:var(--baseline);font-weight:600}
+  .rel{font-size:12.5px;color:var(--text-soft);font-family:var(--mono);margin-top:4px;line-height:1.7}
+  .rel b{color:var(--ink)}
+  @media(max-width:860px){.schema{grid-template-columns:1fr}}
+
+  /* ── stack table ── */
+  table.stack{width:100%;border-collapse:collapse;margin-top:8px;font-size:13.5px}
+  table.stack th,table.stack td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  table.stack th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-soft);font-weight:600}
+  table.stack td:first-child{font-weight:600;white-space:nowrap}
+  table.stack .pick{color:var(--ink);font-family:var(--mono);font-size:12.5px}
+  table.stack .later{color:var(--text-soft);font-size:12.5px}
+
+  /* ── mvp cut ── */
+  .cut{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+  .cut-card{border-radius:14px;padding:20px 22px}
+  .cut-card.in{background:var(--signal-tint);border:1px solid #e9cfa3}
+  .cut-card.out{background:var(--paper-card);border:1px solid var(--line)}
+  .cut-card h4{font-family:"Fraunces",serif;font-size:17px;font-weight:600;margin-bottom:10px}
+  .cut-card ul{list-style:none;font-size:13.5px}
+  .cut-card li{padding:5px 0 5px 20px;position:relative;color:var(--ink-soft)}
+  .cut-card.in li::before{content:"✓";position:absolute;left:0;color:var(--good);font-weight:700}
+  .cut-card.out li::before{content:"○";position:absolute;left:0;color:var(--text-soft)}
+  @media(max-width:860px){.cut{grid-template-columns:1fr}}
+
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-soft);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="eyebrow">MVP blueprint · v0</div>
+  <h1>One engine: ad spend in, caused outcomes out.</h1>
+  <p class="sub">The architecture has one job — take a release's <b>marketing inputs</b> and its <b>outcomes</b> from wherever they live, line them up in a unified model, and return <b>how much of each outcome the marketing actually caused</b>, per channel and per market, with intervals. Everything below serves that sentence.</p>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--baseline)"></i> Outcome (Y) &amp; data plumbing</span>
+    <span><i class="dot" style="background:var(--signal)"></i> Marketing input (X) &amp; the causal core</span>
+    <span><i class="dot" style="background:var(--line)"></i> Context / metadata</span>
+    <span><i class="dot" style="background:var(--ink)"></i> Output / decision</span>
+  </div>
+</div></header>
+
+<div class="wrap">
+
+  <!-- PIPELINE -->
+  <h2 class="sec">The pipeline, end to end</h2>
+  <p class="sec-note">Five stages. The first two are the hard, unglamorous part (getting consented data and joining it to a release); the middle is the moat (causal estimation); the last is what the client pays for (a number they can defend).</p>
+
+  <div class="flow">
+    <div class="stage">
+      <div class="stage-h">1 · Sources</div>
+      <div class="stage-sub">First-party, via client consent — never a locked public API</div>
+      <div class="grp-label">Outcomes (Y)</div>
+      <div class="node y">Distributor API<small>FUGA / Revelator → streams ×day×country</small></div>
+      <div class="node y">Beatport<small>DJ sales, chart pos.</small></div>
+      <div class="node y">Ticketing<small>DICE / vivenu → tickets ×market</small></div>
+      <div class="node y">Apple / Spotify for Artists<small>saves, Shazam, playlist adds</small></div>
+      <div class="grp-label">Inputs (X)</div>
+      <div class="node x">Ad platforms<small>Meta · TikTok · Google/YouTube</small></div>
+      <div class="node x">Promo pools<small>Inflyte · Label Worx feedback</small></div>
+      <div class="node x">Beatport levers<small>pre-orders · Hype · exclusivity</small></div>
+      <div class="grp-label">Context</div>
+      <div class="node ctx">Release metadata<small>type · genre · release + announce date</small></div>
+      <div class="node ctx">Campaign annotations<small>client-entered events</small></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-h">2 · Ingestion</div>
+      <div class="stage-sub">Pull, normalise, and resolve everything to a release</div>
+      <div class="node">Connectors<small>API pulls + CSV upload fallback</small></div>
+      <div class="node">Harmonise fields<small>unify cost/spend/value naming → one schema</small></div>
+      <div class="node x">Entity resolution<small>map every spend &amp; outcome line → release × channel × market × day</small></div>
+      <div class="node">Data-quality gate<small>coverage, gaps, freshness flags</small></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-h">3 · Warehouse</div>
+      <div class="stage-sub">A small star schema — the single source of truth</div>
+      <div class="node">Dimensions<small>client · release · channel · market · date</small></div>
+      <div class="node">Outcome facts<small>daily Y by platform</small></div>
+      <div class="node x">Spend facts<small>daily X by channel</small></div>
+      <div class="node">Promo events<small>discrete levers (sends, adds)</small></div>
+      <div class="node">Metric layer<small>observed here · causal from stage 4</small></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-h">4 · Methods</div>
+      <div class="stage-sub">The causal core — the reason this isn't a BI tool</div>
+      <div class="node core">Hierarchical Bayesian MMM<small>adstock · saturation · partial pooling</small></div>
+      <div class="node core">Announcement decomposition<small>baseline spike vs ad-driven lift</small></div>
+      <div class="node core">Geo-lift experiments<small>staggered DiD · synthetic control</small></div>
+      <div class="node core">Calibration loop<small>experiments → MMM priors</small></div>
+      <div class="node core">Diagnostics<small>R-hat · CIs · fit checks</small></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-h">5 · Outputs</div>
+      <div class="stage-sub">A number they can defend, at two grains</div>
+      <div class="node out">Release scorecard<small>incremental vs baseline ×channel×market</small></div>
+      <div class="node out">Portfolio view<small>across N releases + benchmarks</small></div>
+      <div class="node out">Recommendations<small>reallocate spend · where to push</small></div>
+      <div class="node out">Defend-the-spend report<small>exportable PDF / slides</small></div>
+    </div>
+  </div>
+
+  <!-- METHODS DETAIL -->
+  <h2 class="sec">The methods layer, unpacked</h2>
+  <p class="sec-note">Two products that share one engine, joined by a calibration loop. The MMM is always-on and retrospective; the experiments are planned and proactive; each makes the other more credible.</p>
+  <div class="methods">
+    <div class="method hero">
+      <div class="tag">Always-on · retrospective</div>
+      <h3>Hierarchical Bayesian MMM</h3>
+      <p>Decomposes each outcome into baseline + per-channel incremental, pooling across releases so thin single-release data still identifies.</p>
+      <ul>
+        <li>geometric adstock (carryover)</li>
+        <li>Hill saturation (diminishing returns)</li>
+        <li>NB likelihood for counts</li>
+        <li>partial pooling: release ⊂ client ⊂ genre</li>
+        <li>announcement-spike term</li>
+      </ul>
+    </div>
+    <div class="method">
+      <div class="tag">Planned · proactive</div>
+      <h3>Geo-lift experiments</h3>
+      <p>When a release tours many city-markets with staggered on-sales, that's a near-natural experiment — clean ground truth for what spend caused.</p>
+      <ul>
+        <li>staggered difference-in-differences</li>
+        <li>synthetic control / CausalImpact</li>
+        <li>Meta GeoLift / TBR families</li>
+        <li>power analysis before spend</li>
+      </ul>
+    </div>
+    <div class="method">
+      <div class="tag">The bridge</div>
+      <h3>Calibration loop</h3>
+      <p>Experiment results become informative priors on MMM channel effects — so the always-on model inherits the rigour of the occasional gold-standard test.</p>
+      <ul>
+        <li>experiment mROAS → MMM prior</li>
+        <li>shrinks unidentified channels</li>
+        <li>confidence rises per test run</li>
+        <li>the compounding-benchmark moat</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SCHEMA -->
+  <h2 class="sec">The data model (SQL schema)</h2>
+  <p class="sec-note">A deliberately small star schema. Dimensions describe the world; facts are daily grains keyed to a release; model tables store estimates separately so a re-run never overwrites raw data. <span class="pk">amber = primary key</span>, <span class="fk">blue = foreign key</span>.</p>
+  <div class="schema">
+    <div class="schema-col">
+      <h4>Dimensions — the nouns</h4>
+      <div class="tbl dim">
+        <div class="tbl-h"><span class="kind">dim</span> client</div>
+        <ul>
+          <li><span class="pk">client_id</span><span class="t">pk</span></li>
+          <li>name<span class="t">text</span></li>
+          <li>type<span class="t">label / promoter</span></li>
+          <li>distributor<span class="t">fuga / revelator…</span></li>
+          <li>ticketing_platform<span class="t">dice / vivenu…</span></li>
+        </ul>
+      </div>
+      <div class="tbl dim">
+        <div class="tbl-h"><span class="kind">dim</span> release</div>
+        <ul>
+          <li><span class="pk">release_id</span><span class="t">pk</span></li>
+          <li><span class="fk">client_id</span><span class="t">fk</span></li>
+          <li>title · artist<span class="t">text</span></li>
+          <li>type<span class="t">single/EP/remix…</span></li>
+          <li>genre<span class="t">text</span></li>
+          <li>release_date<span class="t">date</span></li>
+          <li>announce_date<span class="t">date</span></li>
+        </ul>
+      </div>
+      <div class="tbl dim">
+        <div class="tbl-h"><span class="kind">dim</span> channel</div>
+        <ul>
+          <li><span class="pk">channel_id</span><span class="t">pk</span></li>
+          <li>name<span class="t">meta / beatport…</span></li>
+          <li>group<span class="t">paid/owned/earned</span></li>
+          <li>is_observable<span class="t">bool</span></li>
+        </ul>
+      </div>
+      <div class="tbl dim">
+        <div class="tbl-h"><span class="kind">dim</span> market · date</div>
+        <ul>
+          <li><span class="pk">market_id</span> · country<span class="t">pk</span></li>
+          <li><span class="pk">date</span> · week · is_release_wk<span class="t">pk</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="schema-col">
+      <h4>Facts — the daily grains</h4>
+      <div class="tbl fact">
+        <div class="tbl-h"><span class="kind">fact</span> outcome_daily</div>
+        <ul>
+          <li><span class="fk">release_id</span><span class="t">fk</span></li>
+          <li><span class="fk">market_id</span><span class="t">fk</span></li>
+          <li><span class="fk">date</span><span class="t">fk</span></li>
+          <li>platform<span class="t">spotify/beatport…</span></li>
+          <li>metric_type<span class="t">stream/sale/ticket</span></li>
+          <li>value<span class="t">numeric</span></li>
+        </ul>
+      </div>
+      <div class="tbl fact">
+        <div class="tbl-h"><span class="kind">fact</span> spend_daily</div>
+        <ul>
+          <li><span class="fk">release_id</span><span class="t">fk</span></li>
+          <li><span class="fk">channel_id</span><span class="t">fk</span></li>
+          <li><span class="fk">market_id</span><span class="t">fk</span></li>
+          <li><span class="fk">date</span><span class="t">fk</span></li>
+          <li>spend<span class="t">numeric</span></li>
+          <li>impressions · clicks<span class="t">numeric</span></li>
+        </ul>
+      </div>
+      <div class="tbl fact">
+        <div class="tbl-h"><span class="kind">fact</span> promo_event</div>
+        <ul>
+          <li><span class="fk">release_id</span><span class="t">fk</span></li>
+          <li><span class="fk">channel_id</span><span class="t">fk</span></li>
+          <li><span class="fk">date</span><span class="t">fk</span></li>
+          <li>event_type<span class="t">pool_send / editorial_add / preorder</span></li>
+          <li>magnitude<span class="t">feedback / reach</span></li>
+        </ul>
+      </div>
+      <p class="rel">A <b>release</b> has many daily <b>outcome</b> &amp; <b>spend</b> rows. The join key across all facts is <b>release × market × date</b> — that's what entity resolution must produce, and it's the hardest part of stage 2.</p>
+    </div>
+
+    <div class="schema-col">
+      <h4>Model outputs — kept separate</h4>
+      <div class="tbl model">
+        <div class="tbl-h"><span class="kind">run</span> model_run</div>
+        <ul>
+          <li><span class="pk">run_id</span><span class="t">pk</span></li>
+          <li><span class="fk">release_id / client_id</span><span class="t">fk</span></li>
+          <li>model_type<span class="t">mmm / geolift</span></li>
+          <li>ran_at<span class="t">ts</span></li>
+          <li>params · priors<span class="t">jsonb</span></li>
+          <li>diagnostics<span class="t">r_hat, ess, fit</span></li>
+        </ul>
+      </div>
+      <div class="tbl model">
+        <div class="tbl-h"><span class="kind">est</span> model_estimate</div>
+        <ul>
+          <li><span class="fk">run_id</span><span class="t">fk</span></li>
+          <li><span class="fk">channel_id</span><span class="t">fk</span></li>
+          <li><span class="fk">market_id</span><span class="t">fk</span></li>
+          <li>baseline<span class="t">numeric</span></li>
+          <li>incremental<span class="t">numeric</span></li>
+          <li>mroas<span class="t">numeric</span></li>
+          <li>ci_low · ci_high<span class="t">numeric</span></li>
+        </ul>
+      </div>
+      <p class="rel">Every number the dashboard shows reads from <b>model_estimate</b>, tagged to a <b>run</b> with its diagnostics — so any figure is traceable to the model and data that produced it. That traceability <b>is</b> the anti-black-box promise.</p>
+    </div>
+  </div>
+
+  <!-- METRIC LAYER -->
+  <h2 class="sec">The metric layer (what "Organize" sits on)</h2>
+  <p class="sec-note">The dashboard's <em>Organize → Dimensions / Metrics</em> is the face of one layer that spans the warehouse and the methods. Its job: make sure every number resolves to exactly one definition, with its source composition or its model lineage shown — the same transparency promise the model makes.</p>
+  <div class="methods">
+    <div class="method">
+      <div class="tag">Deterministic</div>
+      <h3>Observed metrics</h3>
+      <p>Arithmetic over already-clean warehouse facts. Computed in the transform layer (dbt). The composition is explicit — which source feeds each term.</p>
+      <ul>
+        <li>streams, sales, spend, CTR</li>
+        <li>ROAS = Value⟨Beatport⟩ ÷ Spend⟨Meta+TikTok⟩</li>
+        <li>save rate, Shazam ratio</li>
+        <li>reads from: fact_outcome / fact_spend</li>
+      </ul>
+    </div>
+    <div class="method hero">
+      <div class="tag">Model-derived</div>
+      <h3>Causal metrics</h3>
+      <p>Not a formula — an estimate with a credible interval, produced by a model run. The thing a BI tool structurally cannot give you, and the reason this layer reaches into stage 4.</p>
+      <ul>
+        <li>incremental, baseline, mROAS</li>
+        <li>announcement lift, confidence</li>
+        <li>reads from: model_estimate + run</li>
+        <li>can wrap an observed metric as its outcome</li>
+      </ul>
+    </div>
+    <div class="method">
+      <div class="tag">The boundary</div>
+      <h3>Harmonize ≠ compose</h3>
+      <p>Two steps people conflate. Field <b>harmonization</b> — mapping each platform's messy <code>cost / spend / value</code> naming into one unified field — happens at ingestion (stage 2). Metric <b>composition</b> happens here, over fields that are already clean.</p>
+      <ul>
+        <li>harmonize: stage 2, per connector</li>
+        <li>compose: this layer, per metric</li>
+        <li>so the bank never touches raw naming</li>
+      </ul>
+    </div>
+  </div>
+  <p class="sec-note" style="margin-top:18px">One consequence worth stating: <b>observed and causal metrics feed the same bank from two different stores</b> — observed from the fact tables, causal from <code>model_estimate</code>. The dashboard doesn't care which; it asks the metric layer for "incremental Beatport ROAS" and the layer knows whether to compute it or fetch it. That indirection is what lets the services-first BI build and the eventual custom app share one definition of every number.</p>
+
+  <!-- STACK -->
+  <h2 class="sec">Recommended stack (MVP-pragmatic)</h2>
+  <p class="sec-note">Bias toward boring, hosted, and fast-to-first-result. The services-first model means you can lean on a BI layer over the warehouse before building a bespoke frontend — buy time, prove value, then build.</p>
+  <table class="stack">
+    <thead><tr><th>Layer</th><th>MVP pick</th><th>Why / when to graduate</th></tr></thead>
+    <tbody>
+      <tr><td>Connectors</td><td class="pick">dlt + custom Python pulls; CSV upload</td><td class="later">Airbyte/Fivetran later if connector count explodes</td></tr>
+      <tr><td>Warehouse</td><td class="pick">Postgres (Supabase / Neon)</td><td class="later">DuckDB for local modelling; BigQuery at scale</td></tr>
+      <tr><td>Transforms</td><td class="pick">dbt</td><td class="later">version-controlled semantic layer from day one</td></tr>
+      <tr><td>Modelling</td><td class="pick">Python — PyMC / NumPyro, or Google Meridian; CausalImpact / GeoLift</td><td class="later">your causal core; runs as batch jobs</td></tr>
+      <tr><td>Orchestration</td><td class="pick">cron → Prefect / Dagster</td><td class="later">cron is fine until you have &gt;1 client on a schedule</td></tr>
+      <tr><td>Serving</td><td class="pick">FastAPI (read from model_estimate)</td><td class="later">thin API; the warehouse holds truth</td></tr>
+      <tr><td>Frontend</td><td class="pick">BI first (Evidence / Metabase / Hex) → React + SVG/Recharts</td><td class="later">don't build the custom dashboard until the report sells</td></tr>
+      <tr><td>Reports</td><td class="pick">Templated HTML → PDF</td><td class="later">the "defend the spend" artifact = the real deliverable</td></tr>
+    </tbody>
+  </table>
+
+  <!-- MVP CUT -->
+  <h2 class="sec">Where to draw the v0 line</h2>
+  <p class="sec-note">The temptation is to build the platform. The MVP is a sharp retrospective read on <em>one</em> client's recent releases — enough to earn the pilot and the next conversation.</p>
+  <div class="cut">
+    <div class="cut-card in">
+      <h4>In v0</h4>
+      <ul>
+        <li>One client, electronic beachhead (Beatport + FUGA + Meta/TikTok)</li>
+        <li>Manual/CSV ingestion is acceptable — entity resolution done semi-by-hand</li>
+        <li>Retrospective MMM on past releases + announcement decomposition</li>
+        <li>One per-release scorecard + one portfolio roll-up</li>
+        <li>The semantic layer (every metric defined once)</li>
+        <li>An exportable defend-the-spend report</li>
+      </ul>
+    </div>
+    <div class="cut-card out">
+      <h4>Deliberately not yet</h4>
+      <ul>
+        <li>Self-serve connector onboarding (do it for them)</li>
+        <li>Real-time / always-on refresh (weekly batch is fine)</li>
+        <li>Automated geo-lift design (run one by hand first)</li>
+        <li>Cross-client benchmark library (needs N clients — the moat comes later)</li>
+        <li>Multi-tenant auth, billing, the full app shell</li>
+        <li>Owned-content capture (the hardest X; approximate or annotate)</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    Causal music-marketing measurement · MVP architecture v0 · companion to the dashboard prototype.<br>
+    Outcome (Y) in steel-blue, marketing input (X) and the causal core in amber — the same language the product speaks everywhere.
+  </footer>
+
+</div>
+</body>
+</html>

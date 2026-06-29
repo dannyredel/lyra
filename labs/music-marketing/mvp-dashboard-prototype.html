@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Prototype · Causal Music-Marketing Measurement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1d2e; --ink-2:#252a40;
+    --paper:#f4f2ec; --surface:#ffffff; --surface-2:#faf9f5;
+    --line:#e7e3d8; --line-2:#d9d5c8;
+    --signal:#e0922f; --signal-tint:#f7e9d3; --signal-deep:#b8721c;
+    --baseline:#4f6d8f; --baseline-tint:#dfe7ef;
+    --good:#3f7d5a; --good-tint:#dcebe0; --warn:#c2862a; --bad:#b2543f;
+    --text:#1a1d2e; --text-soft:#5b5f72; --text-faint:#8a8d9c;
+    --mono:"IBM Plex Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--text);font-family:"Hanken Grotesk",sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5}
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+
+  /* ── sidebar ── */
+  aside{background:var(--ink);color:#cfd2e0;padding:22px 16px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 22px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:14px}
+  .brand .mark{width:26px;height:26px;border-radius:7px;background:var(--signal);display:grid;place-items:center;flex:none}
+  .brand .mark::before{content:"";width:9px;height:9px;background:var(--ink);border-radius:2px;transform:rotate(45deg)}
+  .brand b{font-family:"Fraunces",serif;font-weight:600;color:#fff;font-size:15px;letter-spacing:-.01em}
+  .nav-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#6a6f88;padding:14px 8px 6px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;color:#bfc3d4;font-weight:500;font-size:13.5px;transition:background .12s,color .12s}
+  .nav-item:hover{background:rgba(255,255,255,.05);color:#fff}
+  .nav-item.active{background:var(--signal);color:var(--ink);font-weight:600}
+  .nav-item .ic{width:16px;text-align:center;font-size:13px;opacity:.85}
+  .nav-item.active .ic{opacity:1}
+  .spacer{flex:1}
+  .who{font-size:11.5px;color:#6a6f88;font-family:var(--mono);padding:8px;border-top:1px solid rgba(255,255,255,.08)}
+
+  /* ── topbar ── */
+  main{display:flex;flex-direction:column;min-width:0}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--line);padding:14px 28px;display:flex;align-items:center;gap:18px;position:sticky;top:0;z-index:20}
+  .scope{display:flex;align-items:center;gap:10px}
+  .scope-tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint)}
+  .scope-pick{display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:9px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:14px}
+  .scope-pick .grain{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+  .scope-pick .grain.portfolio{background:var(--baseline-tint);color:#2f4a66}
+  .scope-pick .grain.campaign{background:var(--signal-tint);color:var(--signal-deep)}
+  .scope-pick .chev{color:var(--text-faint);font-size:11px}
+  .scope-hint{font-size:12px;color:var(--text-faint);font-style:italic}
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:16px;color:var(--text-soft);font-size:12.5px}
+  .daterange{font-family:var(--mono);font-size:12px;color:var(--baseline);font-weight:500}
+
+  /* scope menu */
+  .scope-menu{position:absolute;top:54px;left:28px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;box-shadow:0 14px 40px rgba(26,29,46,.16);padding:8px;width:330px;z-index:40;display:none}
+  .scope-menu.open{display:block}
+  .scope-menu .grp{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);padding:8px 10px 4px}
+  .scope-opt{padding:9px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .scope-opt:hover{background:var(--surface-2)}
+  .scope-opt .nm{font-weight:600;font-size:13.5px}
+  .scope-opt .mt{font-size:11px;color:var(--text-faint);font-family:var(--mono)}
+  .scope-opt.sel{background:var(--signal-tint)}
+
+  /* ── content ── */
+  .content{padding:26px 28px 60px;overflow-x:hidden}
+  .page{display:none}
+  .page.active{display:block;animation:fade .22s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .page-head{margin-bottom:20px}
+  .page-head h1{font-family:"Fraunces",serif;font-weight:500;font-size:27px;letter-spacing:-.01em}
+  .page-head .meta{color:var(--text-soft);font-size:13px;margin-top:4px}
+  .page-head .meta b{color:var(--text)}
+
+  /* kpi cards */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:13px;margin-bottom:20px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:15px 16px}
+  .kpi .lab{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);display:flex;align-items:center;gap:6px}
+  .kpi .val{font-size:25px;font-weight:700;letter-spacing:-.01em;margin-top:7px}
+  .kpi .val.amber{color:var(--signal-deep)}
+  .kpi .val.blue{color:var(--baseline)}
+  .kpi .delta{font-size:11.5px;font-weight:600;margin-top:3px;font-family:var(--mono)}
+  .kpi .delta.up{color:var(--good)} .kpi .delta.down{color:var(--bad)}
+  .kpi .swatch{width:9px;height:9px;border-radius:2px}
+
+  .grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px}
+  .grid2.even{grid-template-columns:1fr 1fr}
+  @media(max-width:980px){.grid2,.grid2.even{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:18px}
+  .card h3{font-size:14px;font-weight:600;margin-bottom:2px}
+  .card .csub{font-size:12px;color:var(--text-faint);margin-bottom:14px}
+  .card-h-row{display:flex;justify-content:space-between;align-items:flex-start}
+
+  .chart-legend{display:flex;gap:16px;font-size:11.5px;color:var(--text-soft);margin-bottom:6px}
+  .chart-legend span{display:inline-flex;align-items:center;gap:6px}
+  .chart-legend .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .ax{stroke:var(--line);stroke-width:1}
+  .axlab{font-family:var(--mono);font-size:9px;fill:var(--text-faint)}
+
+  /* tables */
+  table.dt{width:100%;border-collapse:collapse;font-size:13px}
+  table.dt th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+  table.dt td{padding:11px 10px;border-bottom:1px solid var(--line)}
+  table.dt th.num,table.dt td.num{text-align:right;font-variant-numeric:tabular-nums}
+  table.dt tr.click{cursor:pointer}
+  table.dt tr.click:hover td{background:var(--surface-2)}
+  .rel-nm{font-weight:600}
+  .rel-mt{font-size:11px;color:var(--text-faint);font-family:var(--mono)}
+  .pill{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;letter-spacing:.03em}
+  .pill.single{background:var(--surface-2);color:var(--text-soft);border:1px solid var(--line)}
+  .amberbar{height:7px;border-radius:4px;background:var(--signal);display:inline-block;vertical-align:middle}
+  .conf{font-family:var(--mono);font-size:11.5px}
+  .conf b{font-weight:600}
+  .open-link{color:var(--baseline);font-family:var(--mono);font-size:11px;font-weight:600}
+
+  /* mini decomposition split */
+  .splitbar{display:flex;height:10px;border-radius:5px;overflow:hidden;width:120px}
+  .splitbar .b{background:var(--baseline)} .splitbar .i{background:var(--signal)}
+
+  /* channel rows */
+  .chrow{display:grid;grid-template-columns:120px 1fr 64px;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .chrow:last-child{border:0}
+  .chrow .nm{font-weight:600;font-size:13px}
+  .chrow .nm small{display:block;font-weight:400;color:var(--text-faint);font-size:10.5px;font-family:var(--mono)}
+  .ci-track{position:relative;height:22px}
+  .ci-line{position:absolute;top:10px;height:2px;background:var(--baseline);opacity:.4}
+  .ci-dot{position:absolute;top:5px;width:12px;height:12px;border-radius:50%;background:var(--signal);border:2px solid var(--surface);transform:translateX(-50%)}
+  .ci-scale{position:absolute;top:10px;height:2px;background:var(--line);left:0;right:0;z-index:-1}
+  .chrow .mr{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--signal-deep)}
+
+  /* connectors */
+  .conn-tabs{display:flex;gap:8px;margin-bottom:16px}
+  .conn-tab{font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:7px;border:1px solid var(--line-2);cursor:pointer;color:var(--text-soft)}
+  .conn-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .conn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .conn{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px}
+  .conn .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .conn .nm{font-weight:600;font-size:13.5px}
+  .conn .role{font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:2px}
+  .conn .st{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.04em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .st.on{background:var(--good-tint);color:var(--good)}
+  .st.auth{background:var(--signal-tint);color:var(--signal-deep)}
+  .st.av{background:var(--surface-2);color:var(--text-faint);border:1px solid var(--line)}
+  .conn .sync{font-size:11px;color:var(--text-faint);margin-top:12px;font-family:var(--mono)}
+  .conn .yx{font-family:var(--mono);font-size:9px;letter-spacing:.05em;padding:1px 6px;border-radius:4px;margin-top:10px;display:inline-block}
+  .yx.y{background:var(--baseline-tint);color:#2f4a66} .yx.x{background:var(--signal-tint);color:var(--signal-deep)}
+
+  /* metrics */
+  .metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:11px}
+  .metric h4{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:9px}
+  .metric h4 .tg{font-family:var(--mono);font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:5px;letter-spacing:.04em}
+  .tg.core{background:var(--signal-tint);color:var(--signal-deep)} .tg.base{background:var(--baseline-tint);color:#2f4a66} .tg.std{background:var(--surface-2);color:var(--text-soft);border:1px solid var(--line)}
+  .metric .def{font-size:13px;color:var(--text-soft);margin-top:7px}
+  .metric .formula{font-family:var(--mono);font-size:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:8px 11px;margin-top:9px;color:var(--ink-2)}
+
+  /* experiments */
+  .exp{display:grid;grid-template-columns:1fr auto;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:11px;align-items:center}
+  .exp .nm{font-weight:600;font-size:14px}
+  .exp .mt{font-size:11.5px;color:var(--text-faint);font-family:var(--mono);margin-top:3px}
+  .exp .res{text-align:right}
+  .exp .res .v{font-weight:700;font-size:18px;color:var(--signal-deep)}
+  .exp .res .s{font-size:10.5px;font-family:var(--mono)}
+  .estatus{font-family:var(--mono);font-size:9.5px;font-weight:600;padding:3px 8px;border-radius:20px}
+  .estatus.done{background:var(--good-tint);color:var(--good)} .estatus.live{background:var(--signal-tint);color:var(--signal-deep)} .estatus.draft{background:var(--surface-2);color:var(--text-faint);border:1px solid var(--line)}
+
+  .alert{display:flex;gap:11px;align-items:flex-start;padding:11px 14px;border-radius:10px;font-size:12.5px;margin-bottom:9px;border:1px solid}
+  .alert.warn{background:#fbf3e3;border-color:#ecd9b0;color:#7a5512}
+  .alert.ok{background:#e8f1ec;border-color:#c4dccd;color:#2c5840}
+  .alert .ai{font-weight:700}
+
+  .note{font-size:11.5px;color:var(--text-faint);font-family:var(--mono);margin-top:14px;line-height:1.7}
+  .hl{background:var(--signal-tint);padding:1px 5px;border-radius:4px;color:var(--signal-deep);font-weight:600}
+
+  /* ── source chips (the "logo" stand-in) ── */
+  .src{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:6px;padding:2px 7px;font-family:var(--mono);font-size:11px;font-weight:500;white-space:nowrap}
+  .src .sd{width:8px;height:8px;border-radius:2px;flex:none}
+  .src.sm{font-size:10px;padding:1px 6px}
+  .expr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-top:10px}
+  .expr .op{color:var(--signal-deep);font-weight:700;font-size:14px}
+  .expr .term{display:inline-flex;align-items:center;gap:6px}
+  .expr .fld{font-weight:600;color:var(--ink)}
+  .expr .grp{display:inline-flex;gap:4px}
+
+  /* ── metric bank ── */
+  .bank-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line-2);border-radius:9px;padding:3px}
+  .seg button{border:0;background:none;font-family:var(--mono);font-size:11.5px;padding:6px 13px;border-radius:7px;cursor:pointer;color:var(--text-soft);font-weight:600}
+  .seg button.on{background:var(--ink);color:#fff}
+  .btn-new{background:var(--signal);color:var(--ink);border:0;border-radius:9px;padding:9px 15px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+  .btn-new:hover{background:#d4851f}
+  .mgroup-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--text-faint);margin:22px 0 10px;display:flex;align-items:center;gap:9px}
+  .mgroup-label .tg{font-size:9px}
+  .mcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-bottom:11px}
+  .mcard.causal{border-left:3px solid var(--signal)}
+  .mcard.observed{border-left:3px solid var(--baseline)}
+  .mcard .mtop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .mcard h4{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:9px}
+  .mcard .unit{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);white-space:nowrap}
+  .mcard .def{font-size:12.5px;color:var(--text-soft);margin-top:7px}
+  .mcard .lineage{font-family:var(--mono);font-size:11px;color:var(--text-soft);margin-top:10px;display:flex;align-items:center;gap:7px}
+  .mcard .lineage .dotrun{width:7px;height:7px;border-radius:50%;background:var(--signal)}
+  .mcard .edit{font-family:var(--mono);font-size:11px;color:var(--baseline);font-weight:600;cursor:pointer;flex:none}
+  .tg-obs{background:var(--baseline-tint);color:#2f4a66}
+  .tg-cau{background:var(--signal-tint);color:var(--signal-deep)}
+
+  /* ── builder modal ── */
+  .modal-bg{position:fixed;inset:0;background:rgba(26,29,46,.45);display:none;align-items:flex-start;justify-content:center;z-index:90;padding:48px 20px;overflow-y:auto}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--surface);border-radius:16px;width:min(640px,100%);box-shadow:0 24px 70px rgba(26,29,46,.3);overflow:hidden}
+  .modal-h{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .modal-h h3{font-family:"Fraunces",serif;font-weight:600;font-size:18px}
+  .modal-h .x{cursor:pointer;color:var(--text-faint);font-size:20px;line-height:1}
+  .modal-b{padding:22px}
+  .fld-row{margin-bottom:16px}
+  .fld-row label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft);margin-bottom:6px;font-weight:600}
+  .fld-row input,.fld-row select{width:100%;border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font-family:inherit;font-size:13.5px;background:var(--surface)}
+  .type-seg{display:flex;gap:8px}
+  .type-seg .opt{flex:1;border:1px solid var(--line-2);border-radius:9px;padding:11px;cursor:pointer;text-align:left}
+  .type-seg .opt.on{border-color:var(--signal);background:var(--signal-tint)}
+  .type-seg .opt b{font-size:13.5px;display:block}
+  .type-seg .opt small{font-size:11px;color:var(--text-soft)}
+  .term-build{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
+  .term-build .op-mid{font-size:20px;color:var(--signal-deep);font-weight:700;padding-bottom:8px;text-align:center}
+  .srcpick{border:1px solid var(--line-2);border-radius:8px;padding:8px;margin-top:6px;max-height:118px;overflow-y:auto;background:var(--surface-2)}
+  .srcpick label{display:flex;align-items:center;gap:8px;font-family:inherit;font-size:12.5px;text-transform:none;letter-spacing:0;padding:3px 4px;cursor:pointer;color:var(--text);font-weight:500;margin:0}
+  .srcpick input{width:auto}
+  .preview-box{background:var(--ink);border-radius:10px;padding:14px 16px;margin-top:6px}
+  .preview-box .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#8a8fae;margin-bottom:8px}
+  .preview-box .expr{background:transparent;border:0;color:#e8eaf2;margin:0;padding:0}
+  .preview-box .expr .fld{color:#fff}
+  .preview-box .src{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16);color:#dfe2ee}
+  .modal-f{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:var(--surface-2)}
+  .btn-ghost{background:none;border:1px solid var(--line-2);border-radius:9px;padding:9px 15px;cursor:pointer;font-family:inherit;font-weight:600;font-size:13px;color:var(--text-soft)}
+
+  /* ── dimensions ── */
+  .dim-mark{width:18px;height:18px;border-radius:4px;background:var(--baseline-tint);display:inline-grid;place-items:center;color:#2f4a66;font-size:10px;font-family:var(--mono);font-weight:700;margin-right:8px;vertical-align:middle}
+  .dim-mark.cust{background:var(--signal-tint);color:var(--signal-deep)}
+
+  /* ── data explorer stub ── */
+  .explorer-shell{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:18px}
+  .ex-bar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:14px;font-size:13px}
+  .ex-pill{display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:8px;padding:7px 11px;font-weight:600;font-size:12.5px}
+  .ex-pill .chev{color:var(--text-faint);font-size:10px}
+  .ex-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ex-field{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:12.5px;background:var(--surface-2)}
+  .ex-field .ty{font-family:var(--mono);font-size:9.5px;color:var(--text-faint)}
+  .ex-field .use{font-family:var(--mono);font-size:10px;color:var(--baseline);font-weight:600;cursor:pointer}
+
+  /* ── geo-lift detail ── */
+  .scalars{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:11px;margin:16px 0}
+  .scalar{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+  .scalar .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint)}
+  .scalar .v{font-size:22px;font-weight:700;margin-top:5px}
+  .scalar .v.amber{color:var(--signal-deep)} .scalar .v.good{color:var(--good)}
+  .scalar .s{font-size:10.5px;color:var(--text-soft);font-family:var(--mono);margin-top:2px}
+  .donor{display:grid;grid-template-columns:90px 1fr 42px;gap:10px;align-items:center;padding:6px 0;font-size:12.5px}
+  .donor .bar{height:8px;background:var(--baseline);border-radius:4px}
+  .donor .w{font-family:var(--mono);font-size:11px;color:var(--text-soft);text-align:right}
+  .panel-title{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin:4px 0 2px}
+  .sig{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:20px;font-weight:600}
+  .sig.ok{background:var(--good-tint);color:var(--good)} .sig.no{background:#f6ddd5;color:var(--bad)}
+
+  /* ── feasibility matrix ── */
+  .feas-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--text-soft);margin-top:10px}
+  .feas-legend .fl{width:13px;height:13px;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:5px}
+  table.feas{border-collapse:separate;border-spacing:5px;font-size:12px;min-width:560px}
+  table.feas th{font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--text-faint);font-weight:600;padding:4px;text-align:center}
+  table.feas td.rh{font-weight:600;text-align:left;white-space:nowrap;color:var(--text)}
+  table.feas td.rh small{display:block;font-weight:400;color:var(--text-faint);font-size:10px;font-family:var(--mono)}
+  table.feas td.mde{font-family:var(--mono);color:var(--text-soft);background:var(--surface-2);border-radius:7px;text-align:center}
+  .fcell{border-radius:8px;padding:9px 6px;text-align:center;font-weight:700;font-size:13px;cursor:default}
+  .fcell small{display:block;font-weight:500;font-size:9px;font-family:var(--mono);opacity:.8}
+  .fcell.ach{background:var(--good-tint);color:#246945}
+  .fcell.cha{background:#fbf0d4;color:#86621a}
+  .fcell.dif{background:#f6ddd5;color:#9c4631}
+  .fcell.sweet{box-shadow:0 0 0 2px var(--good)}
+
+  /* ── MMM diagnostics strip ── */
+  .diag-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .diag{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 13px;font-size:12px;display:flex;align-items:center;gap:8px}
+  .diag .dl{font-family:var(--mono);font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em}
+  .diag .dv{font-weight:700}
+  .diag .chk{width:7px;height:7px;border-radius:50%}
+  .diag .chk.ok{background:var(--good)} .diag .chk.warn{background:var(--warn)}
+
+  /* ── waterfall + curves + optimizer ── */
+  .curve-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:6px}
+  .curve-cell .cl{font-size:12px;font-weight:600;margin-bottom:2px}
+  .curve-cell .cm{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-bottom:4px}
+  .opt-row{display:grid;grid-template-columns:118px 1fr;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .opt-row:last-child{border:0}
+  .opt-row .nm{font-size:12.5px;font-weight:600}
+  .opt-bars{display:flex;flex-direction:column;gap:4px}
+  .opt-bars .ob{height:9px;border-radius:4px;position:relative}
+  .opt-bars .ob.cur{background:var(--baseline);opacity:.55}
+  .opt-bars .ob.rec{background:var(--signal)}
+  .opt-bars .tag{font-family:var(--mono);font-size:9px;color:var(--text-faint);position:absolute;right:-2px;top:-1px;transform:translateX(100%)}
+  .opt-delta{font-family:var(--mono);font-size:11px;font-weight:600}
+  .opt-delta.up{color:var(--good)} .opt-delta.down{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="brand"><span class="mark"></span><b>Counterpoint</b></div>
+    <div class="nav-label">Analyse</div>
+    <div class="nav-item active" data-nav="home"><span class="ic">◇</span> Home</div>
+    <div class="nav-item" data-nav="overview"><span class="ic">▦</span> Overview</div>
+    <div class="nav-item" data-nav="campaigns"><span class="ic">♫</span> Campaigns</div>
+    <div class="nav-item" data-nav="experiments"><span class="ic">⚗</span> Experiments</div>
+    <div class="nav-item" data-nav="channels"><span class="ic">⇄</span> Model results</div>
+    <div class="nav-label">Connect</div>
+    <div class="nav-item" data-nav="connectors"><span class="ic">⊕</span> Data sources</div>
+    <div class="nav-item" data-nav="explorer"><span class="ic">⊞</span> Data explorer</div>
+    <div class="nav-label">Organize</div>
+    <div class="nav-item" data-nav="dimensions"><span class="ic">⊟</span> Dimensions</div>
+    <div class="nav-item" data-nav="metrics"><span class="ic">∑</span> Metrics</div>
+    <div class="spacer"></div>
+    <div class="who">client · Selva Recordings<br>melodic / organic house</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="topbar">
+      <div class="scope">
+        <span class="scope-tag">Scope</span>
+        <div class="scope-pick" id="scopePick" onclick="toggleScopeMenu(event)">
+          <span class="grain portfolio" id="scopeGrain">Portfolio</span>
+          <span id="scopeName">All releases</span>
+          <span class="chev">▼</span>
+        </div>
+        <span class="scope-hint">— changes the grain of every view</span>
+      </div>
+      <div class="right">
+        <span class="daterange">▦ Last 90 days</span>
+        <span>Refreshed just now ⟳</span>
+      </div>
+    </div>
+    <div class="scope-menu" id="scopeMenu">
+      <div class="grp">Whole client</div>
+      <div class="scope-opt sel" data-scope="portfolio" onclick="setScope('portfolio')">
+        <div><div class="nm">Portfolio · All releases</div><div class="mt">6 releases · last 90 days</div></div>
+        <span class="grain portfolio" style="font-family:var(--mono);font-size:9.5px;padding:2px 7px;border-radius:5px">aggregate</span>
+      </div>
+      <div class="grp">One campaign (release)</div>
+      <div id="scopeReleaseList"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- HOME -->
+      <section class="page active" id="page-home">
+        <div class="page-head">
+          <h1>Welcome back</h1>
+          <div class="meta">Here's what moved for <b>Selva Recordings</b> while you were away.</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="lab"><span class="swatch" style="background:var(--signal)"></span>Incremental (90d)</div><div class="val amber">312K</div><div class="delta up">▲ caused by marketing</div></div>
+          <div class="kpi"><div class="lab"><span class="swatch" style="background:var(--baseline)"></span>Baseline (90d)</div><div class="val blue">1.04M</div><div class="delta">would've happened anyway</div></div>
+          <div class="kpi"><div class="lab">Blended mROAS</div><div class="val">3.4×</div><div class="delta up">▲ 0.4 vs prior</div></div>
+          <div class="kpi"><div class="lab">Avg confidence</div><div class="val">71<span style="font-size:14px;color:var(--text-faint)">/100</span></div><div class="delta">across 6 model runs</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Jump back in</h3>
+            <div class="csub">Recent model runs — click to open the release scorecard</div>
+            <table class="dt"><tbody id="homeRuns"></tbody></table>
+          </div>
+          <div class="card">
+            <h3>Needs attention</h3>
+            <div class="csub">Data quality &amp; freshness</div>
+            <div class="alert warn"><span class="ai">!</span><div><b>TikTok Ads</b> spend stopped syncing 4 days ago — re-authorize to keep "Nightform" current.</div></div>
+            <div class="alert warn"><span class="ai">!</span><div><b>"Coral (Remixes)"</b> has no announcement date set — the baseline/incremental split is using the release date as a proxy.</div></div>
+            <div class="alert ok"><span class="ai">✓</span><div>FUGA, Beatport and Meta all synced within the last 24h.</div></div>
+          </div>
+        </div>
+        <p class="note">This is a prototype with mock data. <span class="hl">Amber = incremental</span> (what marketing caused) · <span style="background:var(--baseline-tint);padding:1px 5px;border-radius:4px;color:#2f4a66;font-weight:600">blue = baseline</span> (what would have happened anyway) — the same language everywhere.</p>
+      </section>
+
+      <!-- OVERVIEW (adaptive) -->
+      <section class="page" id="page-overview">
+        <div class="page-head">
+          <h1 id="ovTitle">Portfolio overview</h1>
+          <div class="meta" id="ovMeta">All 6 releases for Selva Recordings · last 90 days</div>
+        </div>
+        <div class="kpis" id="ovKpis"></div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-h-row"><div><h3 id="ovChartTitle">Outcomes over time</h3><div class="csub" id="ovChartSub">Baseline vs marketing-driven incremental, weekly</div></div></div>
+            <div class="chart-legend"><span><i class="sw" style="background:var(--signal)"></i> Incremental (caused)</span><span><i class="sw" style="background:var(--baseline)"></i> Baseline</span></div>
+            <div id="ovChart"></div>
+          </div>
+          <div class="card">
+            <h3 id="ovSideTitle">Channel efficiency</h3>
+            <div class="csub">Marginal ROAS — point estimate with 90% interval</div>
+            <div id="ovChannels"></div>
+          </div>
+        </div>
+        <div class="card" id="ovTableCard">
+          <h3 id="ovTableTitle">Releases, ranked by incremental</h3>
+          <div class="csub">Click any release to switch scope to that campaign</div>
+          <table class="dt">
+            <thead><tr><th>Release</th><th></th><th class="num">Spend</th><th class="num">Incremental</th><th>Baseline / incremental</th><th class="num">mROAS</th><th class="num">Conf.</th><th></th></tr></thead>
+            <tbody id="ovReleaseRows"></tbody>
+          </table>
+        </div>
+        <div id="ovMarketCard"></div>
+      </section>
+
+      <!-- CAMPAIGNS LIST -->
+      <section class="page" id="page-campaigns">
+        <div class="page-head">
+          <h1>Campaigns</h1>
+          <div class="meta">Every release is a campaign. Pick one to set the scope — Overview, Channels and Experiments will all narrow to it.</div>
+        </div>
+        <div class="card">
+          <table class="dt">
+            <thead><tr><th>Release</th><th>Type</th><th class="num">Released</th><th class="num">Spend</th><th class="num">Incremental</th><th class="num">mROAS</th><th class="num">Conf.</th><th></th></tr></thead>
+            <tbody id="campaignRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- EXPERIMENTS (geo-lift hub) -->
+      <section class="page" id="page-experiments">
+        <div class="page-head">
+          <h1>Incrementality</h1>
+          <div class="meta">Planned geo-lift tests — the proactive ground truth that calibrates the always-on model. A clean result on one channel tightens its interval everywhere.</div>
+        </div>
+        <div class="bank-head">
+          <div class="seg"><button class="on" onclick="expTab('tests',this)">Tests</button><button onclick="expTab('feas',this)">Feasibility planner</button></div>
+          <button class="btn-new" onclick="alert('Prototype: the test designer would open here, pre-filled from the feasibility planner.')">+ Create experiment</button>
+        </div>
+
+        <div id="expTestsView">
+          <div class="card" style="padding:0;overflow:hidden">
+            <table class="dt"><thead><tr><th>Name</th><th>Type</th><th>Channel</th><th>Data health</th><th>Status</th><th class="num">Window</th><th></th></tr></thead><tbody id="expRows"></tbody></table>
+          </div>
+          <div id="expDetail"></div>
+        </div>
+
+        <div id="expFeasView" style="display:none">
+          <div class="card">
+            <div class="card-h-row"><div><h3>Feasibility matrix</h3><div class="csub">Min lift (mROAS) detectable at 80% power, 95% confidence — by test duration × weekly spend change. Pick the cheapest cell that still reaches your expected effect.</div></div></div>
+            <div class="feas-legend">
+              <span><i class="fl" style="background:var(--good-tint);border:1px solid #bcdcc8"></i> Achievable</span>
+              <span><i class="fl" style="background:#fbf0d4;border:1px solid #ecd9a8"></i> Challenging</span>
+              <span><i class="fl" style="background:#f6ddd5;border:1px solid #e8bcae"></i> Difficult</span>
+              <span><i class="fl" style="background:var(--surface);border:2px solid var(--good)"></i> Recommended sweet spot</span>
+            </div>
+            <div id="feasMatrix" style="margin-top:14px;overflow-x:auto"></div>
+            <p class="note">Higher weekly spend or longer duration both shrink the minimum detectable effect — but cost more and delay the read. The sweet spot is the cheapest, shortest design whose detectable lift sits at or below your expected lift.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODEL RESULTS (MMM report) -->
+      <section class="page" id="page-channels">
+        <div class="page-head">
+          <h1 id="chTitle">Model results · MMM</h1>
+          <div class="meta" id="chMeta">The standard model report — how the always-on MMM is shared. Pooled across the scope.</div>
+        </div>
+        <div class="diag-strip" id="mmmDiag"></div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Contribution waterfall</h3>
+            <div class="csub">What drove the outcome: baseline (would-happen-anyway) plus each channel's incremental. The honest first number is how much is <em>baseline</em>.</div>
+            <div class="chart-legend"><span><i class="sw" style="background:var(--baseline)"></i> Baseline</span><span><i class="sw" style="background:var(--signal)"></i> Channel incremental</span></div>
+            <div id="mmmWaterfall"></div>
+          </div>
+          <div class="card">
+            <h3>Spend share vs contribution share</h3>
+            <div class="csub">Where a channel's spend bar runs ahead of its contribution bar, it's over-funded. ROI labelled per channel.</div>
+            <div id="mmmSpendContrib"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Response &amp; saturation curves</h3>
+          <div class="csub">Incremental outcome as spend rises. The marker is current spend; a channel flattening before the marker is saturated — move its next euro elsewhere.</div>
+          <div id="mmmCurves" class="curve-grid"></div>
+        </div>
+        <div class="grid2" style="margin-top:16px">
+          <div class="card">
+            <h3>Marginal ROAS by channel</h3>
+            <div class="csub">Point estimate with 90% credible interval. The <em>width</em> matters as much as the point — a tight 3× beats a wide 4×.</div>
+            <div id="mmmRoi" style="margin-top:8px"></div>
+          </div>
+          <div class="card">
+            <h3>Budget optimizer</h3>
+            <div class="csub">Current vs model-recommended allocation, holding total spend fixed. Projected incremental at the foot.</div>
+            <div id="mmmOpt"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3>Adjusted campaign ROAS <span class="src sm tg-cau" style="vertical-align:middle">calibration bridge</span></h3>
+          <div class="csub">MMM is channel-level; buyers plan at campaign level. Multiply each campaign's platform-reported ROAS by its channel adjustment ratio (MMM ÷ platform) to get a de-biased campaign ROAS.</div>
+          <table class="dt" style="margin-top:6px"><thead><tr><th>Channel / campaign</th><th class="num">Platform ROAS</th><th class="num">MMM ROAS</th><th class="num">Adj. ratio</th><th class="num">Adjusted ROAS</th></tr></thead><tbody id="mmmAdj"></tbody></table>
+        </div>
+      </section>
+
+      <!-- CONNECTORS -->
+      <section class="page" id="page-connectors">
+        <div class="page-head">
+          <h1>Data sources</h1>
+          <div class="meta">Outcomes (Y) and marketing inputs (X) come in here — all via the client's own authorization, never a locked public API.</div>
+        </div>
+        <div class="conn-tabs" id="connTabs"></div>
+        <div class="conn-grid" id="connGrid"></div>
+        <p class="note">Status reflects this client only. <span class="yx y" style="margin:0">Y</span> = outcome source · <span class="yx x" style="margin:0">X</span> = marketing-input source. Each source exposes <b>fields</b> (in Data explorer) that become the building blocks for metrics. Entity resolution joins every row to <b>release × market × date</b> before anything reaches a model.</p>
+      </section>
+
+      <!-- DATA EXPLORER (stub) -->
+      <section class="page" id="page-explorer">
+        <div class="page-head">
+          <h1>Data explorer</h1>
+          <div class="meta">Inspect the raw fields a connected source exposes — these are the atoms you compose metrics from. Pick a source to see what's available.</div>
+        </div>
+        <div class="explorer-shell">
+          <div class="ex-bar">
+            <span class="ex-pill" id="exSourcePill">Source: <b id="exSourceName">Beatport</b> <span class="chev">▼</span></span>
+            <span class="rel-mt">grain: release × market × date</span>
+            <span style="margin-left:auto" class="open-link">↪ use selected fields in a new metric</span>
+          </div>
+          <div class="ex-fields" id="exFields"></div>
+        </div>
+        <p class="note">A field tagged <span class="src sm"><i class="sd" style="background:var(--baseline)"></i>measure</span> can be a metric term; a <span class="src sm"><i class="sd" style="background:var(--text-faint)"></i>attribute</span> becomes a dimension. This mirrors how a source's variables flow into the Organize layer.</p>
+      </section>
+
+      <!-- DIMENSIONS -->
+      <section class="page" id="page-dimensions">
+        <div class="page-head">
+          <h1>Dimensions</h1>
+          <div class="meta">The ways you slice every metric. Built-in dimensions come from the sources; custom ones are yours — like grouping channels into paid / owned / earned.</div>
+        </div>
+        <div class="bank-head">
+          <div class="seg"><button class="on" onclick="dimTab('custom',this)">Custom</button><button onclick="dimTab('builtin',this)">Built-in</button></div>
+          <button class="btn-new" onclick="alert('Prototype: the dimension builder would open here.')">+ New dimension</button>
+        </div>
+        <div class="card"><table class="dt"><thead><tr><th>Name</th><th>Description</th><th>Type</th><th></th></tr></thead><tbody id="dimRows"></tbody></table></div>
+      </section>
+
+      <!-- METRICS (managed bank) -->
+      <section class="page" id="page-metrics">
+        <div class="page-head">
+          <h1>Metrics</h1>
+          <div class="meta">Your bank of unified metrics. Every metric shows <b>which source each term comes from</b> — so "ROAS" is never ambiguous. Two kinds: <span class="src sm"><i class="sd" style="background:var(--baseline)"></i>Observed</span> (arithmetic over connected sources) and <span class="src sm"><i class="sd" style="background:var(--signal)"></i>Causal</span> (produced by a model run).</div>
+        </div>
+        <div class="bank-head">
+          <div class="seg"><button class="on" onclick="metTab('all',this)">All</button><button onclick="metTab('causal',this)">Causal</button><button onclick="metTab('observed',this)">Observed</button></div>
+          <button class="btn-new" onclick="openBuilder()">+ New metric</button>
+        </div>
+        <div id="metCausal"></div>
+        <div id="metObserved"></div>
+        <p class="note">Composition is explicit by design: the same transparency promise the model makes, the metric layer makes too. Field harmonization (mapping each platform's raw "cost / spend / value" naming into one unified field) happens earlier, at the connector — so here you only ever compose already-clean fields.</p>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- BUILDER MODAL -->
+<div class="modal-bg" id="builderBg">
+  <div class="modal">
+    <div class="modal-h"><h3>New metric</h3><span class="x" onclick="closeBuilder()">×</span></div>
+    <div class="modal-b">
+      <div class="fld-row"><label>Name</label><input id="bName" placeholder="e.g. Beatport ROAS" value="Beatport ROAS"></div>
+      <div class="fld-row"><label>Kind</label>
+        <div class="type-seg">
+          <div class="opt on" id="optObs" onclick="setKind('observed')"><b>Observed</b><small>arithmetic over source fields</small></div>
+          <div class="opt" id="optCau" onclick="setKind('causal')"><b>Causal</b><small>produced by a model run</small></div>
+        </div>
+      </div>
+      <div id="obsBuild">
+        <div class="term-build">
+          <div><label>Numerator field</label>
+            <select id="bNumField"><option>Value</option><option>Streams</option><option>Units sold</option><option>Tickets</option></select>
+            <div class="srcpick" id="bNumSrc"></div>
+          </div>
+          <div class="op-mid" id="bOp" onclick="cycleOp()" title="click to change">÷</div>
+          <div><label>Denominator field</label>
+            <select id="bDenField"><option>Spend</option><option>Impressions</option><option>Clicks</option></select>
+            <div class="srcpick" id="bDenSrc"></div>
+          </div>
+        </div>
+        <label style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft);margin:16px 0 6px;display:block">Live definition</label>
+        <div class="preview-box"><div class="pl">this is what every screen and invoice will use</div><div id="bPreview"></div></div>
+      </div>
+      <div id="cauBuild" style="display:none">
+        <div class="fld-row"><label>Method</label><select><option>Hierarchical Bayesian MMM</option><option>Geo-lift (staggered DiD)</option><option>Calibrated MMM (experiment priors)</option></select></div>
+        <div class="fld-row"><label>Outcome it decomposes</label><select><option>Beatport sales</option><option>Spotify streams (via FUGA)</option><option>Ticket sales</option></select></div>
+        <p class="note" style="margin-top:4px">Causal metrics aren't a formula — they're an estimate with a credible interval, tied to a model run and its diagnostics. The bank stores the configuration; the value comes from the run.</p>
+      </div>
+    </div>
+    <div class="modal-f"><button class="btn-ghost" onclick="closeBuilder()">Cancel</button><button class="btn-new" onclick="saveMetric()">Save metric</button></div>
+  </div>
+</div>
+
+<script>
+/* ─────────── mock data ─────────── */
+const RELEASES = [
+  {id:'marea', name:'Marea', artist:'Lunara', type:'Single', date:'12 Apr', spend:8200, baseline:78000, incremental:41000, mroas:4.9, conf:78, genre:'melodic house'},
+  {id:'tessellate', name:'Tessellate EP', artist:'Kösen', type:'EP', date:'02 Mar', spend:14500, baseline:142000, incremental:63000, mroas:3.6, conf:74, genre:'organic house'},
+  {id:'nightform', name:'Nightform', artist:'A.R. Vega', type:'Single', date:'28 Apr', spend:6100, baseline:54000, incremental:19000, mroas:2.4, conf:62, genre:'deep house'},
+  {id:'coral', name:'Coral (Remixes)', artist:'Selva V.A.', type:'Remix', date:'15 Mar', spend:9800, baseline:96000, incremental:54000, mroas:4.2, conf:69, genre:'melodic house'},
+  {id:'solardrift', name:'Solar Drift', artist:'Mira Tān', type:'Single', date:'05 Apr', spend:7400, baseline:61000, incremental:33000, mroas:3.9, conf:73, genre:'organic house'},
+  {id:'meridian', name:'Meridian', artist:'Kösen', type:'Single', date:'21 Apr', spend:5200, baseline:47000, incremental:14000, mroas:2.1, conf:58, genre:'deep house'},
+];
+const CHANNELS_PORT = [
+  {nm:'Beatport promo', sub:'pool + pre-order', mr:5.2, lo:3.9, hi:6.6, spendShare:18, incShare:31},
+  {nm:'Meta Ads', sub:'IG / FB', mr:3.1, lo:2.2, hi:4.1, spendShare:34, incShare:26},
+  {nm:'TikTok Spark', sub:'boosted organic', mr:3.8, lo:2.4, hi:5.3, spendShare:21, incShare:23},
+  {nm:'Editorial PR', sub:'blogs / playlists', mr:2.6, lo:1.3, hi:4.0, spendShare:12, incShare:11},
+  {nm:'YouTube pre-roll', sub:'video', mr:1.7, lo:0.6, hi:2.9, spendShare:15, incShare:9},
+];
+const EXPERIMENTS = [
+  {id:'bp', nm:'Beatport pre-order geo-lift', type:'Geo-level', ch:'beatport', health:'High', status:'Completed', sclass:'done', win:'Mar 03 – Apr 14',
+   lift:27, inc:14200, iroas:4.6, p:0.03, ciLo:18, ciHi:36, treated:['DE','NL','BE'], donors:[['UK',0.34],['ES',0.22],['FR',0.18],['IT',0.14],['SE',0.12]]},
+  {id:'tt', nm:'TikTok Spark incrementality', type:'Geo-level', ch:'tiktok', health:'Medium', status:'Completed', sclass:'done', win:'Feb 10 – Mar 09',
+   lift:19, inc:8600, iroas:3.8, p:0.07, ciLo:9, ciHi:29, treated:['DE','AT'], donors:[['NL',0.31],['CH',0.27],['UK',0.21],['SE',0.21]]},
+  {id:'mt', nm:'Meta geo-holdout', type:'Geo-level', ch:'meta', health:'Medium', status:'Running', sclass:'live', win:'Apr 28 – reads May 26', live:true},
+  {id:'pp', nm:'Promo-pool vs no-pool', type:'Geo-level', ch:'beatport', health:'Low', status:'Scheduled', sclass:'draft', win:'next release', draft:true},
+];
+// feasibility matrix: rows=duration, cols=weekly spend; value=min detectable mROAS %, class by band
+const FEAS_COLS=['€10k/wk','€20k/wk','€35k/wk','€50k/wk','€75k/wk'];
+const FEAS_ROWS=[
+  {d:'2 weeks', note:'higher variance', mde:'€18k', cells:[[38,'dif'],[34,'dif'],[30,'dif'],[27,'cha'],[24,'cha']]},
+  {d:'3 weeks', note:'', mde:'€15k', cells:[[32,'dif'],[28,'dif'],[24,'cha'],[21,'cha'],[18,'ach']]},
+  {d:'4 weeks', note:'recommended', mde:'€12k', cells:[[26,'dif'],[22,'cha'],[18,'cha'],[15,'ach sweet'],[13,'ach']]},
+  {d:'5 weeks', note:'', mde:'€10k', cells:[[20,'cha'],[17,'cha'],[14,'ach sweet'],[11,'ach'],[9,'ach']]},
+  {d:'6 weeks', note:'', mde:'€9k', cells:[[15,'cha'],[12,'ach'],[10,'ach'],[8,'ach'],[6,'ach']]},
+];
+// MMM results
+const MMM_DIAG=[['R²','0.88','ok'],['MAPE','11%','ok'],['Baseline share','77%','ok'],['Max R-hat','1.01','ok'],['VIF (max)','3.2','ok'],['Calibrated by','2 geo-tests','ok']];
+const MMM_WF=[ // waterfall: baseline then channel increments → total
+  {nm:'Baseline', v:1040000, base:true},
+  {nm:'Beatport promo', v:96000},
+  {nm:'TikTok Spark', v:74000},
+  {nm:'Meta', v:71000},
+  {nm:'Editorial PR', v:39000},
+  {nm:'YouTube', v:32000},
+];
+const MMM_CURVES=[ // response curves: kappa (half-sat), current spend frac of max, mr at current
+  {nm:'Beatport promo', sat:0.30, cur:0.42},
+  {nm:'Meta', sat:0.55, cur:0.78},
+  {nm:'TikTok Spark', sat:0.45, cur:0.38},
+  {nm:'Editorial PR', sat:0.40, cur:0.55},
+  {nm:'YouTube', sat:0.62, cur:0.83},
+];
+const MMM_OPT=[ // current vs recommended spend share
+  {nm:'Beatport promo', cur:18, rec:29},
+  {nm:'TikTok Spark', cur:21, rec:26},
+  {nm:'Meta', cur:34, rec:24},
+  {nm:'Editorial PR', cur:12, rec:13},
+  {nm:'YouTube', cur:15, rec:8},
+];
+const MMM_ADJ=[ // adjusted campaign ROAS bridge
+  {nm:'Beatport promo', plat:5.9, mmm:5.2},
+  {nm:'— Pre-order push A', plat:6.4, sub:true},
+  {nm:'— DJ pool servicing', plat:5.1, sub:true},
+  {nm:'Meta', plat:4.4, mmm:3.1},
+  {nm:'— Prospecting', plat:5.3, sub:true},
+  {nm:'— Retargeting', plat:3.5, sub:true},
+];
+const CONNECTORS = {
+  Outcomes:[
+    {nm:'FUGA', role:'distributor · streams', st:'on', stl:'Connected', sync:'synced 6h ago', yx:'y'},
+    {nm:'Beatport', role:'DJ sales · charts', st:'on', stl:'Connected', sync:'synced 18h ago', yx:'y'},
+    {nm:'Apple for Artists', role:'Shazam · retention', st:'on', stl:'Connected', sync:'synced 1d ago', yx:'y'},
+    {nm:'Spotify for Artists', role:'saves · playlist adds', st:'auth', stl:'Re-auth', sync:'token expired', yx:'y'},
+    {nm:'DICE / vivenu', role:'ticket sales (live)', st:'av', stl:'Available', sync:'for live releases', yx:'y'},
+  ],
+  Inputs:[
+    {nm:'Meta Ads', role:'IG / FB spend', st:'on', stl:'Connected', sync:'synced 5h ago', yx:'x'},
+    {nm:'TikTok Ads', role:'Spark Ads spend', st:'auth', stl:'Re-auth', sync:'stopped 4d ago', yx:'x'},
+    {nm:'Google / YouTube Ads', role:'pre-roll spend', st:'on', stl:'Connected', sync:'synced 7h ago', yx:'x'},
+    {nm:'Inflyte', role:'promo-pool feedback', st:'av', stl:'Available', sync:'CSV upload supported', yx:'x'},
+    {nm:'Label Worx', role:'PromoWorx stats', st:'av', stl:'Available', sync:'CSV upload supported', yx:'x'},
+  ],
+  Context:[
+    {nm:'Release calendar', role:'dates · type · genre', st:'on', stl:'Connected', sync:'manual + distributor', yx:''},
+    {nm:'Campaign annotations', role:'client-entered events', st:'on', stl:'Connected', sync:'3 pending review', yx:''},
+  ],
+};
+/* sources — the "logo" stand-in is a named chip + brand-ish colour mark */
+const SRC = {
+  beatport:{nm:'Beatport', c:'#01ff95', role:'Y'},
+  fuga:{nm:'FUGA', c:'#4f6d8f', role:'Y'},
+  spotify:{nm:'Spotify', c:'#1db954', role:'Y'},
+  apple:{nm:'Apple', c:'#8a8d9c', role:'Y'},
+  dice:{nm:'DICE', c:'#c0392b', role:'Y'},
+  meta:{nm:'Meta', c:'#1877f2', role:'X'},
+  tiktok:{nm:'TikTok', c:'#1a1d2e', role:'X'},
+  youtube:{nm:'YouTube', c:'#cc3a30', role:'X'},
+  google:{nm:'Google', c:'#e0922f', role:'X'},
+};
+function chip(k){const s=SRC[k];return `<span class="src sm"><i class="sd" style="background:${s.c}"></i>${s.nm}</span>`;}
+function chips(ks){return `<span class="grp">${ks.map(chip).join('')}</span>`;}
+
+/* metric bank — observed (source-composed) + causal (model-derived) */
+const METRICS_CAUSAL = [
+  {nm:'Incremental', unit:'count / €', def:'Outcome caused by marketing — what would not have happened without the spend. The number the client is really buying.', lineage:'from: MMM run · observed − baseline'},
+  {nm:'Baseline', unit:'count', def:'The counterfactual: outcomes the release earns anyway (announcement, catalogue pull, organic). Includes the announcement spike.', lineage:'from: MMM run · estimate at zero spend'},
+  {nm:'Marginal ROAS', unit:'ratio', def:'Incremental value from the next euro on a channel — not average ROAS. What reallocation is decided on.', lineage:'from: MMM run · ∂ incremental ÷ ∂ spend'},
+  {nm:'Announcement lift', unit:'count', def:'Share of the on-sale spike from the artist announcement rather than the ads running in the same window. The signature decomposition.', lineage:'from: MMM run · spike − ad incremental'},
+  {nm:'Confidence', unit:'0–100', def:'How much to trust an estimate — data coverage, convergence (R-hat, ESS) and whether an experiment calibrated the channel. Separate from the estimate.', lineage:'from: run diagnostics'},
+];
+const METRICS_OBSERVED = [
+  {nm:'Total streams', unit:'count', num:{f:'Streams',s:['fuga']}, def:'Streams across all platforms the distributor reports — defined once so it never silently means "Spotify only".', note:'FUGA rolls up Spotify + Apple + Deezer'},
+  {nm:'Beatport ROAS', unit:'ratio', num:{f:'Value',s:['beatport']}, op:'÷', den:{f:'Spend',s:['meta','tiktok']}, def:'The ambiguity resolved: sales value from Beatport over paid-social spend. You choose the sources on each side.'},
+  {nm:'Save rate', unit:'%', num:{f:'Saves',s:['spotify']}, op:'÷', den:{f:'Streams',s:['fuga']}, def:'First-7-day save rate — the strongest signal that triggers algorithmic playlists.'},
+  {nm:'Shazam ratio', unit:'ratio', num:{f:'Shazams',s:['apple']}, op:'÷', den:{f:'Streams',s:['fuga']}, def:'A near-pure organic-demand signal: people heard it somewhere and looked it up.'},
+  {nm:'Blended spend', unit:'€', num:{f:'Spend',s:['meta','tiktok','youtube','google']}, def:'All paid-channel spend for a release — the X total before the model splits credit.'},
+  {nm:'CTR', unit:'%', num:{f:'Clicks',s:['meta','tiktok']}, op:'÷', den:{f:'Impressions',s:['meta','tiktok']}, def:'Standard ad-platform efficiency metric, composed from the paid sources you select.'},
+];
+const DIMENSIONS = {
+  custom:[
+    {nm:'Channel group', d:'Split channels into paid / owned / earned / algorithmic', cust:true},
+    {nm:'Media type', d:'Promo pool · paid social · editorial · pre-order · video', cust:true},
+    {nm:'Release type', d:'Single · EP · album · remix · compilation', cust:true},
+    {nm:'Beachhead genre', d:'Melodic · organic · deep house — the electronic cut', cust:true},
+    {nm:'Tour leg', d:'Groups markets into a release\'s touring legs (for live)', cust:true},
+  ],
+  builtin:[
+    {nm:'Release', d:'The campaign unit — every fact keys to it'},
+    {nm:'Artist', d:'From release metadata / distributor'},
+    {nm:'Market', d:'Country / territory, from every source'},
+    {nm:'Channel', d:'Meta, TikTok, Beatport promo, editorial…'},
+    {nm:'Date · week', d:'Daily grain; is-release-week flag'},
+    {nm:'Platform', d:'Spotify, Apple, Beatport, Deezer…'},
+  ],
+};
+const EX_FIELDS = {
+  Beatport:[['Value','measure'],['Units sold','measure'],['Chart position','measure'],['Track','attribute'],['Label','attribute'],['Genre','attribute'],['Country','attribute'],['Date','attribute']],
+};
+
+/* ─────────── helpers ─────────── */
+const fmt = n => n>=1e6 ? (n/1e6).toFixed(2)+'M' : n>=1e3 ? Math.round(n/1e3)+'K' : ''+n;
+const eur = n => '€'+(n>=1e3 ? (n/1e3).toFixed(1)+'k' : n);
+
+/* stacked area: baseline (blue) + incremental (amber) over weeks */
+function stackedArea(weeks, baseArr, incArr){
+  const W=560,H=210,pl=4,pr=4,pt=10,pb=22, plotW=W-pl-pr, plotH=H-pt-pb;
+  const tot = baseArr.map((b,i)=>b+incArr[i]);
+  const max = Math.max(...tot)*1.12;
+  const x = i => pl + (i/(weeks-1))*plotW;
+  const y = v => pt + plotH - (v/max)*plotH;
+  const ptsBase = baseArr.map((b,i)=>[x(i),y(b)]);
+  const ptsTop = tot.map((t,i)=>[x(i),y(t)]);
+  const areaBase = `M${pl},${pt+plotH} `+ptsBase.map(p=>`L${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')+` L${pl+plotW},${pt+plotH} Z`;
+  const areaInc = ptsBase.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L');
+  const areaIncTop = ptsTop.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).reverse().join(' L');
+  const incPath = `M${areaInc} L${areaIncTop} Z`;
+  let grid='';
+  for(let g=0;g<=2;g++){const gy=pt+ (g/2)*plotH; grid+=`<line class="ax" x1="${pl}" y1="${gy}" x2="${pl+plotW}" y2="${gy}" opacity="0.5"/>`;}
+  let xl='';
+  const labs=['wk 1','','','wk 4','','','wk 7','','','wk 10','','wk 12'];
+  labs.forEach((l,i)=>{ if(l) xl+=`<text class="axlab" x="${x(i)}" y="${H-6}" text-anchor="middle">${l}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}">${grid}
+    <path d="${areaBase}" fill="var(--baseline)" opacity="0.85"/>
+    <path d="${incPath}" fill="var(--signal)" opacity="0.92"/>
+    <polyline points="${ptsTop.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--signal-deep)" stroke-width="1.5"/>
+    ${xl}</svg>`;
+}
+
+/* announcement decomposition: daily bars, baseline blue + ad incremental amber, with announce marker */
+function decompChart(days, base, inc, announceDay){
+  const W=560,H=210,pl=4,pr=4,pt=10,pb=22,plotW=W-pl-pr,plotH=H-pt-pb;
+  const tot=base.map((b,i)=>b+inc[i]); const max=Math.max(...tot)*1.14;
+  const bw=plotW/days*0.7, gap=plotW/days;
+  const y=v=>pt+plotH-(v/max)*plotH;
+  let bars='';
+  for(let i=0;i<days;i++){
+    const cx=pl+i*gap+gap*0.15;
+    const hB=(base[i]/max)*plotH, hI=(inc[i]/max)*plotH;
+    bars+=`<rect x="${cx.toFixed(1)}" y="${(pt+plotH-hB).toFixed(1)}" width="${bw.toFixed(1)}" height="${hB.toFixed(1)}" fill="var(--baseline)" opacity="0.8"/>`;
+    bars+=`<rect x="${cx.toFixed(1)}" y="${(pt+plotH-hB-hI).toFixed(1)}" width="${bw.toFixed(1)}" height="${hI.toFixed(1)}" fill="var(--signal)" opacity="0.92"/>`;
+  }
+  const ax=pl+announceDay*gap+gap*0.15+bw/2;
+  const marker=`<line x1="${ax}" y1="${pt-2}" x2="${ax}" y2="${pt+plotH}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 3"/><text class="axlab" x="${ax}" y="${pt-4}" text-anchor="middle" style="fill:var(--ink);font-weight:600">announce</text>`;
+  const rel=`<text class="axlab" x="${pl}" y="${H-6}">day 0 (on-sale / release)</text><text class="axlab" x="${pl+plotW}" y="${H-6}" text-anchor="end">+${days}d</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}">${bars}${marker}${rel}</svg>`;
+}
+
+/* channel mROAS rows with CI */
+function channelRows(chs){
+  const max=Math.max(...chs.map(c=>c.hi))*1.05;
+  return chs.map(c=>{
+    const pct=v=>(v/max)*100;
+    return `<div class="chrow">
+      <div class="nm">${c.nm}<small>${c.sub}</small></div>
+      <div class="ci-track"><div class="ci-scale"></div>
+        <div class="ci-line" style="left:${pct(c.lo)}%;width:${pct(c.hi)-pct(c.lo)}%"></div>
+        <div class="ci-dot" style="left:${pct(c.mr)}%"></div>
+      </div>
+      <div class="mr">${c.mr.toFixed(1)}×</div>
+    </div>`;
+  }).join('');
+}
+
+/* spend vs incremental share bars */
+function shareBars(chs){
+  return chs.map(c=>`
+    <div style="margin-bottom:13px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><b>${c.nm}</b><span class="rel-mt">spend ${c.spendShare}% · inc ${c.incShare}%</span></div>
+      <div style="height:8px;background:var(--baseline);width:${c.spendShare*2.4}%;border-radius:4px;margin-bottom:3px" title="spend share"></div>
+      <div style="height:8px;background:var(--signal);width:${c.incShare*2.4}%;border-radius:4px" title="incremental share"></div>
+    </div>`).join('');
+}
+
+/* deterministic-ish series for a release */
+function seriesFor(rel){
+  const weeks=12; const base=[],inc=[];
+  for(let i=0;i<weeks;i++){
+    const decay=Math.exp(-i/6);
+    base.push(Math.round(rel.baseline/weeks*(0.7+0.9*decay)));
+    const campaignPush = i<6 ? Math.sin((i+1)/6*Math.PI) : 0.15;
+    inc.push(Math.round(rel.incremental/weeks*(0.5+1.7*campaignPush)));
+  }
+  return {weeks,base,inc};
+}
+function decompFor(rel){
+  const days=21; const base=[],inc=[]; const announce=4;
+  for(let i=0;i<days;i++){
+    let b=12; if(i===announce){b=95;} else if(i>announce&&i<announce+4){b=60*Math.exp(-(i-announce)/3);} else if(i>=announce){b=18*Math.exp(-(i-announce)/9)+8;}
+    base.push(b);
+    let x=0; if(i>=announce-1&&i<announce+10){x=(35*Math.exp(-Math.abs(i-announce-2)/4))*(rel.incremental/41000);}
+    inc.push(x);
+  }
+  return {days,base,inc,announce};
+}
+
+/* ─────────── state + render ─────────── */
+let scope='portfolio';
+
+function portfolioTotals(){
+  const t={spend:0,baseline:0,incremental:0};
+  RELEASES.forEach(r=>{t.spend+=r.spend;t.baseline+=r.baseline;t.incremental+=r.incremental;});
+  t.mroas=(RELEASES.reduce((s,r)=>s+r.mroas,0)/RELEASES.length);
+  t.conf=Math.round(RELEASES.reduce((s,r)=>s+r.conf,0)/RELEASES.length);
+  return t;
+}
+
+function renderOverview(){
+  const ovK=document.getElementById('ovKpis');
+  if(scope==='portfolio'){
+    const t=portfolioTotals();
+    document.getElementById('ovTitle').textContent='Portfolio overview';
+    document.getElementById('ovMeta').innerHTML='All 6 releases for <b>Selva Recordings</b> · last 90 days';
+    document.getElementById('ovChartTitle').textContent='Outcomes over time';
+    document.getElementById('ovChartSub').textContent='Baseline vs marketing-driven incremental, weekly · all releases';
+    document.getElementById('ovSideTitle').textContent='Channel efficiency';
+    document.getElementById('ovTableTitle').textContent='Releases, ranked by incremental';
+    document.getElementById('ovTableCard').style.display='';
+    document.getElementById('ovMarketCard').innerHTML='';
+    ovK.innerHTML=`
+      <div class="kpi"><div class="lab"><span class="swatch" style="background:var(--signal)"></span>Incremental</div><div class="val amber">${fmt(t.incremental)}</div><div class="delta up">▲ 23% of total</div></div>
+      <div class="kpi"><div class="lab"><span class="swatch" style="background:var(--baseline)"></span>Baseline</div><div class="val blue">${fmt(t.baseline)}</div><div class="delta">77% of total</div></div>
+      <div class="kpi"><div class="lab">Spend</div><div class="val">${eur(t.spend)}</div><div class="delta">across 6 releases</div></div>
+      <div class="kpi"><div class="lab">Blended mROAS</div><div class="val">${t.mroas.toFixed(1)}×</div><div class="delta up">▲ next € best on Beatport</div></div>
+      <div class="kpi"><div class="lab">Avg confidence</div><div class="val">${t.conf}<span style="font-size:14px;color:var(--text-faint)">/100</span></div><div class="delta">6 runs</div></div>`;
+    // aggregate series
+    let aw=12, ab=Array(aw).fill(0), ai=Array(aw).fill(0);
+    RELEASES.forEach(r=>{const s=seriesFor(r); for(let i=0;i<aw;i++){ab[i]+=s.base[i];ai[i]+=s.inc[i];}});
+    document.getElementById('ovChart').innerHTML=stackedArea(aw,ab,ai);
+    document.getElementById('ovChannels').innerHTML=channelRows(CHANNELS_PORT);
+    document.getElementById('ovReleaseRows').innerHTML=RELEASES.slice().sort((a,b)=>b.incremental-a.incremental).map(r=>{
+      const tot=r.baseline+r.incremental; const ip=Math.round(r.incremental/tot*100);
+      return `<tr class="click" onclick="setScope('${r.id}')">
+        <td><span class="rel-nm">${r.name}</span><span class="rel-mt"> · ${r.artist}</span></td>
+        <td><span class="pill single">${r.type}</span></td>
+        <td class="num">${eur(r.spend)}</td>
+        <td class="num" style="color:var(--signal-deep);font-weight:700">${fmt(r.incremental)}</td>
+        <td><div class="splitbar"><div class="b" style="width:${100-ip}%"></div><div class="i" style="width:${ip}%"></div></div></td>
+        <td class="num">${r.mroas.toFixed(1)}×</td>
+        <td class="num conf"><b>${r.conf}</b></td>
+        <td><span class="open-link">open →</span></td>
+      </tr>`;
+    }).join('');
+  } else {
+    const r=RELEASES.find(x=>x.id===scope); const tot=r.baseline+r.incremental; const ip=Math.round(r.incremental/tot*100);
+    document.getElementById('ovTitle').textContent=r.name+' — scorecard';
+    document.getElementById('ovMeta').innerHTML=`<b>${r.artist}</b> · ${r.type} · released ${r.date} · ${r.genre}`;
+    document.getElementById('ovChartTitle').textContent='Announcement decomposition';
+    document.getElementById('ovChartSub').textContent='Daily outcomes around release — the spike is mostly the announcement, not the ads';
+    document.getElementById('ovSideTitle').textContent='Channel efficiency · this release';
+    document.getElementById('ovTableCard').style.display='none';
+    ovK.innerHTML=`
+      <div class="kpi"><div class="lab"><span class="swatch" style="background:var(--signal)"></span>Incremental</div><div class="val amber">${fmt(r.incremental)}</div><div class="delta up">▲ ${ip}% of total</div></div>
+      <div class="kpi"><div class="lab"><span class="swatch" style="background:var(--baseline)"></span>Baseline</div><div class="val blue">${fmt(r.baseline)}</div><div class="delta">incl. announcement spike</div></div>
+      <div class="kpi"><div class="lab">Spend</div><div class="val">${eur(r.spend)}</div></div>
+      <div class="kpi"><div class="lab">mROAS</div><div class="val">${r.mroas.toFixed(1)}×</div><div class="delta ${r.mroas>3?'up':'down'}">${r.mroas>3?'▲ healthy':'▼ thin'}</div></div>
+      <div class="kpi"><div class="lab">Confidence</div><div class="val">${r.conf}<span style="font-size:14px;color:var(--text-faint)">/100</span></div></div>`;
+    const d=decompFor(r);
+    document.getElementById('ovChart').innerHTML=decompChart(d.days,d.base,d.inc,d.announce);
+    // per-release channels (scaled variant)
+    const chs=CHANNELS_PORT.map(c=>({...c,mr:Math.max(0.6,c.mr*(0.8+r.mroas/8)),lo:Math.max(0.3,c.lo*(0.8+r.mroas/8)),hi:c.hi*(0.8+r.mroas/8)}));
+    document.getElementById('ovChannels').innerHTML=channelRows(chs);
+    // per-market table for the release
+    document.getElementById('ovMarketCard').innerHTML=`<div class="card"><h3>By market</h3><div class="csub">Where the spend caused sales — the reallocation map</div>
+      <table class="dt"><thead><tr><th>Market</th><th class="num">Spend</th><th class="num">Incremental</th><th class="num">mROAS</th><th>Read</th></tr></thead><tbody>
+      ${[['Germany',0.34,5.4],['Netherlands',0.22,4.1],['UK',0.18,3.2],['Spain',0.14,2.6],['France',0.12,1.4]].map(m=>{
+        const sp=Math.round(r.spend*m[1]); const inc=Math.round(sp*m[2]);
+        return `<tr><td>${m[0]}</td><td class="num">${eur(sp)}</td><td class="num" style="color:var(--signal-deep);font-weight:600">${fmt(inc)}</td><td class="num">${m[2].toFixed(1)}×</td><td class="rel-mt">${m[2]>3?'push more':m[2]>2?'hold':'pull back'}</td></tr>`;
+      }).join('')}
+      </tbody></table></div>`;
+  }
+}
+
+/* ── geo-lift 3-panel ── */
+function geoLiftPanels(e){
+  const W=560,H=150,pl=4,pr=4,pt=10,pb=20,plotW=W-pl-pr,plotH=H-pt-pb;
+  const N=26, split=14; // pre/post
+  // synthetic control closely tracks treated pre-split, diverges after by lift%
+  const ctrl=[],trt=[];
+  for(let i=0;i<N;i++){
+    const seas=50+14*Math.sin(i/3)+ (i*0.6);
+    ctrl.push(seas + (i%2?2:-2));
+    const eff = i>=split ? seas*(e.lift/100)*((i-split+1)/(N-split)) : 0;
+    trt.push(seas + (i%2?-1.5:1.8) + eff);
+  }
+  const all=ctrl.concat(trt), max=Math.max(...all)*1.12, min=Math.min(...all)*0.85;
+  const x=i=>pl+(i/(N-1))*plotW, y=v=>pt+plotH-((v-min)/(max-min))*plotH;
+  const line=(arr,c,dash)=>`<polyline points="${arr.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="2" ${dash?'stroke-dasharray="4 3"':''}/>`;
+  const sx=x(split);
+  const splitLine=`<line x1="${sx}" y1="${pt}" x2="${sx}" y2="${pt+plotH}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 3"/><text class="axlab" x="${sx}" y="${pt-3}" text-anchor="middle" style="fill:var(--ink);font-weight:600">treatment start</text>`;
+  // gap fill post
+  const gap=[]; for(let i=split;i<N;i++)gap.push([x(i),y(trt[i]),y(ctrl[i])]);
+  const gapPath=`M${gap.map(g=>g[0].toFixed(1)+','+g[1].toFixed(1)).join(' L')} L${gap.slice().reverse().map(g=>g[0].toFixed(1)+','+g[2].toFixed(1)).join(' L')} Z`;
+  const p1=`<svg viewBox="0 0 ${W} ${H}"><path d="${gapPath}" fill="var(--signal)" opacity="0.18"/>${line(ctrl,'var(--baseline)',true)}${line(trt,'var(--ink)',false)}${splitLine}
+    <text class="axlab" x="${pl}" y="${H-5}">pre-period (fit check)</text><text class="axlab" x="${pl+plotW}" y="${H-5}" text-anchor="end">test period</text></svg>`;
+  // pointwise lift
+  const pw=trt.map((v,i)=>v-ctrl[i]); const pmax=Math.max(...pw.map(Math.abs))*1.2;
+  const yz=pt+plotH/2; const yp=v=>yz-(v/pmax)*(plotH/2);
+  let bars=''; const bw=plotW/N*0.6;
+  pw.forEach((v,i)=>{const h=Math.abs(v/pmax)*(plotH/2);bars+=`<rect x="${(x(i)-bw/2).toFixed(1)}" y="${(v>=0?yp(v):yz).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${v>=0?'var(--signal)':'var(--bad)'}" opacity="0.85"/>`;});
+  const p2=`<svg viewBox="0 0 ${W} ${H}"><line x1="${pl}" y1="${yz}" x2="${pl+plotW}" y2="${yz}" class="ax"/>${bars}<line x1="${sx}" y1="${pt}" x2="${sx}" y2="${pt+plotH}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 3"/></svg>`;
+  // cumulative
+  let cum=0; const cu=pw.map(v=>cum+=Math.max(0,v));
+  const cmax=Math.max(...cu)*1.1; const yc=v=>pt+plotH-(v/cmax)*plotH;
+  const p3=`<svg viewBox="0 0 ${W} ${H}"><polyline points="${cu.map((v,i)=>x(i).toFixed(1)+','+yc(v).toFixed(1)).join(' ')}" fill="none" stroke="var(--signal-deep)" stroke-width="2"/><line x1="${sx}" y1="${pt}" x2="${sx}" y2="${pt+plotH}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 3"/><text class="axlab" x="${pl+plotW}" y="${pt+10}" text-anchor="end" style="fill:var(--signal-deep);font-weight:600">cumulative lift</text></svg>`;
+  return {p1,p2,p3};
+}
+
+/* ── MMM waterfall ── */
+function waterfall(items){
+  const W=560,H=230,pl=4,pr=4,pt=12,pb=46,plotW=W-pl-pr,plotH=H-pt-pb;
+  const tot=items.reduce((s,i)=>s+i.v,0); const max=tot*1.06;
+  const bw=plotW/items.length*0.62, gap=plotW/items.length;
+  const y=v=>pt+plotH-(v/max)*plotH;
+  let run=0, bars='';
+  items.forEach((it,i)=>{
+    const cx=pl+i*gap+gap*0.19;
+    const h=(it.v/max)*plotH; const top=y(run+it.v);
+    bars+=`<rect x="${cx.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${it.base?'var(--baseline)':'var(--signal)'}" opacity="${it.base?0.85:0.92}"/>`;
+    bars+=`<text class="axlab" x="${(cx+bw/2).toFixed(1)}" y="${(top-4).toFixed(1)}" text-anchor="middle" style="font-weight:600">${fmt(it.v)}</text>`;
+    bars+=`<text class="axlab" x="${(cx+bw/2).toFixed(1)}" y="${H-26}" text-anchor="middle" transform="rotate(12 ${(cx+bw/2).toFixed(1)} ${H-26})">${it.nm}</text>`;
+    if(!it.base){const py=y(run); bars+=`<line x1="${(cx-gap*0.19).toFixed(1)}" y1="${py.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${py.toFixed(1)}" stroke="var(--line-2)" stroke-dasharray="2 2"/>`;}
+    run+=it.v;
+  });
+  // total bar
+  const tcx=pl+items.length*gap+gap*0.0; const th=(tot/max)*plotH;
+  bars+=`<rect x="${(tcx-bw).toFixed(1)}" y="${y(tot).toFixed(1)}" width="${bw.toFixed(1)}" height="${th.toFixed(1)}" rx="2" fill="var(--ink)"/><text class="axlab" x="${(tcx-bw/2).toFixed(1)}" y="${(y(tot)-4).toFixed(1)}" text-anchor="middle" style="font-weight:600">${fmt(tot)}</text><text class="axlab" x="${(tcx-bw/2).toFixed(1)}" y="${H-26}" text-anchor="middle">Total</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}">${bars}</svg>`;
+}
+
+/* ── response/saturation curve ── */
+function respCurve(c){
+  const W=190,H=120,pl=6,pr=6,pt=8,pb=18,plotW=W-pl-pr,plotH=H-pt-pb;
+  const f=x=>x/(x+c.sat); const fmax=f(1);
+  const pts=[];for(let i=0;i<=40;i++){const x=i/40;pts.push([pl+x*plotW, pt+plotH-(f(x)/fmax)*plotH]);}
+  const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const cx=pl+c.cur*plotW, cy=pt+plotH-(f(c.cur)/fmax)*plotH;
+  const sat=c.cur>c.sat*1.6;
+  return `<svg viewBox="0 0 ${W} ${H}"><line x1="${pl}" y1="${pt+plotH}" x2="${pl+plotW}" y2="${pt+plotH}" class="ax"/>
+    <path d="${path}" fill="none" stroke="var(--baseline)" stroke-width="2"/>
+    <line x1="${cx.toFixed(1)}" y1="${pt}" x2="${cx.toFixed(1)}" y2="${pt+plotH}" stroke="${sat?'var(--bad)':'var(--signal)'}" stroke-width="1.5" stroke-dasharray="3 2"/>
+    <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="${sat?'var(--bad)':'var(--signal)'}"/>
+    <text class="axlab" x="${pl}" y="${H-5}">spend →</text><text class="axlab" x="${pl+plotW}" y="${H-5}" text-anchor="end" style="fill:${sat?'var(--bad)':'var(--signal-deep)'};font-weight:600">${sat?'saturated':'headroom'}</text></svg>`;
+}
+
+/* ── MODEL RESULTS (MMM report) ── */
+function renderModelResults(){
+  const r = scope!=='portfolio' ? RELEASES.find(x=>x.id===scope) : null;
+  document.getElementById('chMeta').innerHTML = r ? `The MMM report for <b>${r.name}</b>` : 'The MMM report, pooled across all 6 releases for Selva Recordings';
+  document.getElementById('mmmDiag').innerHTML=MMM_DIAG.map(d=>`<div class="diag"><span class="dl">${d[0]}</span><span class="dv">${d[1]}</span><span class="chk ${d[2]}"></span></div>`).join('');
+  document.getElementById('mmmWaterfall').innerHTML=waterfall(MMM_WF);
+  // spend vs contribution (reuse shareBars-style but with ROI)
+  document.getElementById('mmmSpendContrib').innerHTML=CHANNELS_PORT.map(c=>`
+    <div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><b>${c.nm}</b><span class="rel-mt">ROI ${c.mr.toFixed(1)}× · spend ${c.spendShare}% · contrib ${c.incShare}%</span></div>
+    <div style="height:8px;background:var(--baseline);width:${c.spendShare*2.4}%;border-radius:4px;margin-bottom:3px"></div>
+    <div style="height:8px;background:var(--signal);width:${c.incShare*2.4}%;border-radius:4px"></div></div>`).join('');
+  document.getElementById('mmmCurves').innerHTML=MMM_CURVES.map(c=>`<div class="curve-cell"><div class="cl">${c.nm}</div><div class="cm">${c.cur>c.sat*1.6?'past saturation':'below saturation'}</div>${respCurve(c)}</div>`).join('');
+  document.getElementById('mmmRoi').innerHTML=channelRows(CHANNELS_PORT);
+  document.getElementById('mmmOpt').innerHTML=MMM_OPT.map(o=>{
+    const d=o.rec-o.cur;
+    return `<div class="opt-row"><div class="nm">${o.nm}</div><div class="opt-bars">
+      <div class="ob cur" style="width:${o.cur*2.2}%"><span class="tag">now ${o.cur}%</span></div>
+      <div class="ob rec" style="width:${o.rec*2.2}%"><span class="tag">rec ${o.rec}%</span></div>
+      </div></div>`;
+  }).join('')+`<div style="margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:12.5px;display:flex;justify-content:space-between"><span class="rel-mt">projected incremental at same total spend</span><b style="color:var(--good)">+9.4%</b></div>`;
+  let parentRatio=1;
+  document.getElementById('mmmAdj').innerHTML=MMM_ADJ.map(a=>{
+    if(a.sub){const adj=a.plat*parentRatio;
+      return `<tr><td style="color:var(--text-soft);padding-left:18px">${a.nm}</td><td class="num">${a.plat.toFixed(1)}×</td><td class="num rel-mt">—</td><td class="num rel-mt">×${parentRatio.toFixed(2)}</td><td class="num" style="font-weight:600">${adj.toFixed(1)}×</td></tr>`;}
+    parentRatio=a.mmm/a.plat;
+    return `<tr><td><b>${a.nm}</b></td><td class="num">${a.plat.toFixed(1)}×</td><td class="num">${a.mmm.toFixed(1)}×</td><td class="num" style="color:var(--signal-deep);font-weight:600">${parentRatio.toFixed(2)}</td><td class="num" style="font-weight:700">${a.mmm.toFixed(1)}×</td></tr>`;
+  }).join('');
+}
+
+/* ── EXPERIMENTS hub ── */
+function expTab(t,el){
+  document.querySelectorAll('#page-experiments .seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');
+  document.getElementById('expTestsView').style.display=t==='tests'?'':'none';
+  document.getElementById('expFeasView').style.display=t==='feas'?'':'none';
+  if(t==='feas')renderFeas();
+}
+function renderExperiments(){
+  const hc={High:'st on',Medium:'st auth',Low:'st av'};
+  document.getElementById('expRows').innerHTML=EXPERIMENTS.map(e=>`
+    <tr class="click" onclick="openExp('${e.id}')">
+      <td><span class="rel-nm" style="color:var(--baseline)">${e.nm}</span></td>
+      <td class="rel-mt">${e.type}</td>
+      <td>${chip(e.ch)}</td>
+      <td><span class="${hc[e.health]}" style="font-size:9.5px;padding:2px 8px;border-radius:20px;font-family:var(--mono);font-weight:600">${e.health}</span></td>
+      <td><span class="estatus ${e.sclass}">${e.status}</span></td>
+      <td class="num rel-mt">${e.win}</td>
+      <td><span class="open-link">${e.live||e.draft?'view →':'results →'}</span></td></tr>`).join('');
+}
+function openExp(id){
+  const e=EXPERIMENTS.find(x=>x.id===id); const D=document.getElementById('expDetail');
+  if(e.live||e.draft){
+    D.innerHTML=`<div class="card" style="margin-top:16px"><div class="card-h-row"><div><h3>${e.nm}</h3><div class="csub">${e.status} · ${e.win}</div></div><span class="estatus ${e.sclass}">${e.status}</span></div>
+      <p style="font-size:13px;color:var(--text-soft);margin-top:8px">${e.draft?'Design not yet locked — open the feasibility planner to choose a duration × spend cell that can detect your expected lift, then create the test.':'Test is collecting data. Results (treated vs synthetic control, lift, p-value) will populate here once the test window and cooldown complete.'}</p></div>`;
+    D.scrollIntoView({behavior:'smooth',block:'nearest'}); return;
+  }
+  const g=geoLiftPanels(e); const sig=e.p<0.1;
+  D.innerHTML=`<div class="card" style="margin-top:16px">
+    <div class="card-h-row"><div><h3>${e.nm}</h3><div class="csub">${e.type} · ${chip(e.ch)} · treated: ${e.treated.join(', ')} · ${e.win}</div></div>
+      <span class="sig ${sig?'ok':'no'}">${sig?'✓ significant':'✕ not significant'} · p=${e.p.toFixed(2)}</span></div>
+    <div class="scalars">
+      <div class="scalar"><div class="l">Lift</div><div class="v amber">+${e.lift}%</div><div class="s">90% CI ${e.ciLo}–${e.ciHi}%</div></div>
+      <div class="scalar"><div class="l">Incremental</div><div class="v amber">${fmt(e.inc)}</div><div class="s">caused units</div></div>
+      <div class="scalar"><div class="l">iROAS</div><div class="v good">${e.iroas.toFixed(1)}×</div><div class="s">incremental ROAS</div></div>
+      <div class="scalar"><div class="l">p-value</div><div class="v">${e.p.toFixed(2)}</div><div class="s">${sig?'< 0.10 ✓':'≥ 0.10'}</div></div>
+    </div>
+    <div class="grid2"><div>
+      <div class="panel-title">1 · Treated vs synthetic control</div>${g.p1}
+      <div class="panel-title" style="margin-top:8px">2 · Pointwise lift</div>${g.p2}
+      <div class="panel-title" style="margin-top:8px">3 · Cumulative effect</div>${g.p3}
+    </div><div>
+      <div class="panel-title">Synthetic control composition</div>
+      <p style="font-size:12px;color:var(--text-soft);margin:4px 0 10px">The counterfactual is a weighted blend of untreated markets, fitted to match the treated markets <em>before</em> treatment. Close pre-period tracking (panel 1, left of the dashed line) is the validity check.</p>
+      ${e.donors.map(d=>`<div class="donor"><span>${d[0]}</span><div class="bar" style="width:${d[1]*100}%"></div><span class="w">${(d[1]*100).toFixed(0)}%</span></div>`).join('')}
+      <div style="margin-top:14px;padding:11px 13px;background:var(--signal-tint);border-radius:9px;font-size:12px;color:var(--signal-deep)"><b>Calibration:</b> this result becomes a prior on ${SRC[e.ch].nm}'s MMM coefficient — tightening its credible interval in the Model results.</div>
+    </div></div>
+  </div>`;
+  D.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function renderFeas(){
+  let head=`<tr><td class="rh"></td><td class="mde" style="background:none">MDE €</td>${FEAS_COLS.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+  let rows=FEAS_ROWS.map(r=>`<tr><td class="rh">${r.d}${r.note?`<small>${r.note}</small>`:''}</td><td class="mde">${r.mde}</td>${r.cells.map(c=>`<td><div class="fcell ${c[1]}">${c[0]}%<small>min ROAS</small></div></td>`).join('')}</tr>`).join('');
+  document.getElementById('feasMatrix').innerHTML=`<table class="feas">${head}${rows}</table>`;
+}
+
+function renderChannels(){ renderModelResults(); }
+
+function renderStaticLists(){
+  // home runs
+  document.getElementById('homeRuns').innerHTML=RELEASES.slice(0,4).map(r=>`
+    <tr class="click" onclick="setScope('${r.id}');nav('overview')">
+      <td><span class="rel-nm">${r.name}</span> <span class="rel-mt">· mmm · just now</span></td>
+      <td class="num" style="color:var(--signal-deep);font-weight:700">${fmt(r.incremental)}</td>
+      <td class="num conf"><b>${r.conf}</b><span class="rel-mt">/100</span></td>
+      <td><span class="open-link">open →</span></td></tr>`).join('');
+  // campaigns
+  document.getElementById('campaignRows').innerHTML=RELEASES.map(r=>`
+    <tr class="click" onclick="setScope('${r.id}')">
+      <td><span class="rel-nm">${r.name}</span><span class="rel-mt"> · ${r.artist}</span></td>
+      <td><span class="pill single">${r.type}</span></td>
+      <td class="num rel-mt">${r.date}</td>
+      <td class="num">${eur(r.spend)}</td>
+      <td class="num" style="color:var(--signal-deep);font-weight:700">${fmt(r.incremental)}</td>
+      <td class="num">${r.mroas.toFixed(1)}×</td>
+      <td class="num conf"><b>${r.conf}</b></td>
+      <td><span class="open-link">set scope →</span></td></tr>`).join('');
+  // experiments hub
+  renderExperiments();
+  // connectors
+  document.getElementById('connTabs').innerHTML=Object.keys(CONNECTORS).map((k,i)=>`<div class="conn-tab ${i===0?'active':''}" onclick="connTab('${k}',this)">${k==='Outcomes'?'Outcomes (Y)':k==='Inputs'?'Marketing inputs (X)':'Context'}</div>`).join('')+`<div class="conn-tab" onclick="connTab('ALL',this)">All</div>`;
+  connTab('Outcomes');
+  // scope menu list
+  document.getElementById('scopeReleaseList').innerHTML=RELEASES.map(r=>`
+    <div class="scope-opt" data-scope="${r.id}" onclick="setScope('${r.id}')">
+      <div><div class="nm">${r.name}</div><div class="mt">${r.artist} · ${r.type}</div></div>
+      <span class="grain campaign" style="font-family:var(--mono);font-size:9.5px;padding:2px 7px;border-radius:5px">${fmt(r.incremental)} inc</span></div>`).join('');
+  // metrics bank + dimensions + explorer
+  renderMetrics(); renderDims('custom'); renderExplorer();
+}
+
+/* ── metric bank ── */
+let metFilter='all';
+function exprHtml(m){
+  let parts=[`<span class="term"><span class="fld">${m.num.f}</span>${chips(m.num.s)}</span>`];
+  if(m.op){parts.push(`<span class="op">${m.op}</span>`,`<span class="term"><span class="fld">${m.den.f}</span>${chips(m.den.s)}</span>`);}
+  return `<div class="expr">${parts.join('')}</div>`;
+}
+function renderMetrics(){
+  const showC = metFilter==='all'||metFilter==='causal';
+  const showO = metFilter==='all'||metFilter==='observed';
+  document.getElementById('metCausal').innerHTML = showC ? `
+    <div class="mgroup-label">Causal · model-derived <span class="src sm tg-cau" style="border:0"><i class="sd" style="background:var(--signal)"></i>only this product has these</span></div>`+
+    METRICS_CAUSAL.map(m=>`<div class="mcard causal"><div class="mtop"><h4>${m.nm} <span class="src sm tg-cau">causal</span></h4><span class="unit">${m.unit}</span></div>
+      <div class="def">${m.def}</div><div class="lineage"><span class="dotrun"></span>${m.lineage}</div></div>`).join('') : '';
+  document.getElementById('metObserved').innerHTML = showO ? `
+    <div class="mgroup-label">Observed · composed from sources</div>`+
+    METRICS_OBSERVED.map(m=>`<div class="mcard observed"><div class="mtop"><h4>${m.nm} <span class="src sm tg-obs">observed</span></h4><span class="edit">edit ✎</span></div>
+      ${exprHtml(m)}<div class="def">${m.def}${m.note?` <span class="rel-mt">· ${m.note}</span>`:''}</div></div>`).join('') : '';
+}
+function metTab(f,el){metFilter=f;document.querySelectorAll('#page-metrics .seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderMetrics();}
+
+/* ── dimensions ── */
+function renderDims(tab){
+  document.getElementById('dimRows').innerHTML=DIMENSIONS[tab].map(d=>`
+    <tr><td><span class="dim-mark ${d.cust?'cust':''}">${d.cust?'✦':'≡'}</span><span class="rel-nm">${d.nm}</span></td>
+    <td class="rel-mt" style="color:var(--text-soft)">${d.d}</td><td><span class="src sm">${d.cust?'custom':'built-in'}</span></td>
+    <td>${d.cust?'<span class="open-link">edit →</span>':''}</td></tr>`).join('');
+}
+function dimTab(t,el){document.querySelectorAll('#page-dimensions .seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderDims(t);}
+
+/* ── data explorer stub ── */
+function renderExplorer(){
+  document.getElementById('exFields').innerHTML=EX_FIELDS.Beatport.map(f=>`
+    <div class="ex-field"><span><b>${f[0]}</b> <span class="ty">${f[1]}</span></span>
+    <span class="use">${f[1]==='measure'?'+ metric':'+ dimension'}</span></div>`).join('');
+}
+
+/* ── builder modal ── */
+let bKind='observed', bOpSym='÷';
+const OPS=['÷','×','−','+'];
+function openBuilder(){document.getElementById('builderBg').classList.add('open');renderSrcPicks();updatePreview();}
+function closeBuilder(){document.getElementById('builderBg').classList.remove('open');}
+function setKind(k){bKind=k;
+  document.getElementById('optObs').classList.toggle('on',k==='observed');
+  document.getElementById('optCau').classList.toggle('on',k==='causal');
+  document.getElementById('obsBuild').style.display=k==='observed'?'':'none';
+  document.getElementById('cauBuild').style.display=k==='causal'?'':'none';
+}
+function srcCheckboxes(group,defaults){
+  return Object.keys(SRC).map(k=>`<label><input type="checkbox" data-grp="${group}" value="${k}" ${defaults.includes(k)?'checked':''} onchange="updatePreview()"> ${chip(k)}</label>`).join('');
+}
+function renderSrcPicks(){
+  document.getElementById('bNumSrc').innerHTML=srcCheckboxes('num',['beatport']);
+  document.getElementById('bDenSrc').innerHTML=srcCheckboxes('den',['meta','tiktok']);
+}
+function picked(group){return [...document.querySelectorAll(`#b${group==='num'?'Num':'Den'}Src input:checked`)].map(i=>i.value);}
+function cycleOp(){bOpSym=OPS[(OPS.indexOf(bOpSym)+1)%OPS.length];document.getElementById('bOp').textContent=bOpSym;updatePreview();}
+function updatePreview(){
+  const nf=document.getElementById('bNumField').value, df=document.getElementById('bDenField').value;
+  const ns=picked('num'), ds=picked('den');
+  let html=`<div class="expr"><span class="term"><span class="fld">${nf}</span>${ns.length?chips(ns):'<span class="rel-mt">pick source</span>'}</span>`;
+  html+=`<span class="op">${bOpSym}</span><span class="term"><span class="fld">${df}</span>${ds.length?chips(ds):'<span class="rel-mt">pick source</span>'}</span></div>`;
+  document.getElementById('bPreview').innerHTML=html;
+}
+document.getElementById('bNumField').addEventListener('change',updatePreview);
+document.getElementById('bDenField').addEventListener('change',updatePreview);
+function saveMetric(){
+  const nm=document.getElementById('bName').value||'Untitled metric';
+  if(bKind==='observed'){
+    METRICS_OBSERVED.unshift({nm,unit:'ratio',num:{f:document.getElementById('bNumField').value,s:picked('num')},op:bOpSym,den:{f:document.getElementById('bDenField').value,s:picked('den')},def:'Custom metric you just defined — composition is explicit and reused everywhere.'});
+  } else {
+    METRICS_CAUSAL.unshift({nm,unit:'est ± CI',def:'Custom causal metric — its value is produced by the selected model run.',lineage:'from: model run (configured)'});
+  }
+  renderMetrics();closeBuilder();
+}
+
+function connTab(key,el){
+  if(el){document.querySelectorAll('.conn-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+  let items=[];
+  if(key==='ALL'){Object.values(CONNECTORS).forEach(a=>items=items.concat(a));}
+  else items=CONNECTORS[key]||[];
+  document.getElementById('connGrid').innerHTML=items.map(c=>`
+    <div class="conn"><div class="top"><div><div class="nm">${c.nm}</div><div class="role">${c.role}</div></div>
+    <span class="st ${c.st}">${c.stl}</span></div>
+    <div class="sync">${c.sync}</div>
+    ${c.yx?`<span class="yx ${c.yx}">${c.yx.toUpperCase()}</span>`:''}</div>`).join('');
+}
+
+/* nav + scope wiring */
+function nav(page){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.nav===page));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+page));
+  if(page==='overview')renderOverview();
+  if(page==='channels')renderChannels();
+  if(page==='experiments')renderExperiments();
+  if(page==='metrics')renderMetrics();
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.nav)));
+
+function toggleScopeMenu(e){e.stopPropagation();document.getElementById('scopeMenu').classList.toggle('open');}
+document.addEventListener('click',()=>document.getElementById('scopeMenu').classList.remove('open'));
+
+function setScope(s){
+  scope=s;
+  const g=document.getElementById('scopeGrain'), nm=document.getElementById('scopeName');
+  document.querySelectorAll('.scope-opt').forEach(o=>o.classList.toggle('sel',o.dataset.scope===s));
+  if(s==='portfolio'){g.textContent='Portfolio';g.className='grain portfolio';nm.textContent='All releases';}
+  else{const r=RELEASES.find(x=>x.id===s);g.textContent='Campaign';g.className='grain campaign';nm.textContent=r.name;}
+  document.getElementById('scopeMenu').classList.remove('open');
+  // scope change always lands you on the adaptive Overview
+  nav('overview');
+  renderChannels();
+}
+
+/* init */
+renderStaticLists();
+renderOverview();
+</script>
+</body>
+</html>

@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vega — Experiment Design Lab</title>
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['\\(','\\)']], displayMath: [['$$','$$']],
+      macros: {
+        blue:   ['\\color[rgb]{0.431,0.659,0.996}{#1}', 1],
+        green:  ['\\color[rgb]{0.247,0.714,0.545}{#1}', 1],
+        pink:   ['\\color[rgb]{0.914,0.329,0.541}{#1}', 1],
+        purple: ['\\color[rgb]{0.616,0.482,1.000}{#1}', 1],
+        orange: ['\\color[rgb]{0.878,0.549,0.310}{#1}', 1],
+        gray:   ['\\color[rgb]{0.588,0.627,0.698}{#1}', 1]
+      }
+    },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161922; --ink:#e7e9ee; --muted:#9aa3b2; --line:#262b36;
+    --accent:#6ea8fe; --accent2:#9d7bff;
+    --intuition:#3fb68b; --pitfall:#e0795b; --vega:#c79a3a; --proof:#7c8499;
+    --maxw:880px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;display:grid;grid-template-columns:272px 1fr}
+  aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);
+    background:var(--panel);padding:22px 16px}
+  .brand{font-weight:700;letter-spacing:.4px;font-size:12px;color:var(--muted);text-transform:uppercase}
+  aside h1{font-size:15.5px;margin:6px 0 4px;line-height:1.3}
+  aside .meta{font-size:11.5px;color:var(--muted);margin-bottom:16px}
+  .tier{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:14px 0 6px}
+  .chap{display:flex;gap:9px;align-items:flex-start;color:var(--ink);text-decoration:none;font-size:13.5px;
+    padding:8px 9px;border-radius:8px;opacity:.82;cursor:pointer}
+  .chap:hover{background:#1d2230;opacity:1}
+  .chap.active{background:#1d2738;opacity:1}
+  .chap.active .cn{color:var(--accent)}
+  .chap .cn{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600;min-width:16px}
+  .chap.active{border-left:2px solid var(--accent);padding-left:7px}
+  nav.toc{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  nav.toc a{display:block;font-size:12.5px;padding:3px 9px;color:var(--muted);text-decoration:none;border-radius:6px}
+  nav.toc a:hover{color:var(--ink)} nav.toc a.on{color:var(--accent)}
+  main{max-width:var(--maxw);margin:0 auto;padding:46px 34px 130px}
+  .chapter{display:none} .chapter.show{display:block;animation:f .25s ease}
+  @keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .crumb{color:var(--muted);font-size:12.5px;margin-bottom:6px}
+  h2.title{font-size:29px;line-height:1.18;margin:0 0 4px;letter-spacing:-.4px}
+  .subtitle{color:var(--muted);margin:0 0 22px;font-size:15px}
+  .lead{font-size:17px;color:#cfd4de;border-left:3px solid var(--accent2);padding-left:14px;margin:18px 0 6px}
+  h3{margin:40px 0 10px;font-size:20px;letter-spacing:-.2px;scroll-margin-top:20px}
+  h3 .num{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:9px}
+  p{margin:12px 0} ul{margin:12px 0}
+  code{background:#1d2230;padding:1px 6px;border-radius:5px;font-size:13px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;color:#cdd6f4}
+  .box{border-left:3px solid var(--line);background:var(--panel);border-radius:0 10px 10px 0;padding:13px 17px;margin:18px 0}
+  .box .tag{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;display:block;margin-bottom:3px}
+  .box.intuition{border-color:var(--intuition)} .box.intuition .tag{color:var(--intuition)}
+  .box.pitfall{border-color:var(--pitfall)} .box.pitfall .tag{color:var(--pitfall)}
+  .box.vega{border-color:var(--vega);background:#1a1813} .box.vega .tag{color:var(--vega)}
+  details.proof{border-left:3px solid var(--proof);background:#13161d;border-radius:0 10px 10px 0;padding:8px 17px;margin:18px 0}
+  details.proof summary{cursor:pointer;color:var(--proof);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+  details.proof[open] summary{margin-bottom:6px}
+  .eq{background:#12151c;border:1px solid var(--line);border-radius:10px;padding:2px 16px;margin:15px 0;overflow-x:auto}
+  .eq.key{border-color:#2f3d57;box-shadow:0 0 0 1px #1f2a3d inset,0 8px 30px -18px var(--accent)}
+  .keylabel{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;color:var(--accent);text-transform:uppercase;margin:14px 0 -6px}
+  figure{margin:24px 0} figcaption{color:var(--muted);font-size:12.5px;text-align:center;margin-top:8px}
+  .node rect{fill:#1a1f2b;stroke:#33405a} .node text{fill:#e7e9ee;font-size:12.5px;font-family:inherit}
+  .node .sub{fill:#9aa3b2;font-size:10.5px} .hl rect{stroke:var(--accent);fill:#152033}
+  .edge{stroke:#46506a;stroke-width:1.6;fill:none;marker-end:url(#arr)} .edge-l{fill:#9aa3b2;font-size:10.5px}
+  table.tt{border-collapse:collapse;width:100%;margin:16px 0;font-size:13.5px}
+  table.tt th,table.tt td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  table.tt th{background:#1a1f2b;color:var(--muted);font-weight:600}
+  footer{margin-top:46px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:12.5px}
+  footer a{color:var(--accent);text-decoration:none}
+  /* ---- calculator widgets ---- */
+  .calc{background:linear-gradient(180deg,#171b24,#13161d);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px 20px;margin:22px 0}
+  .calc h4{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent)}
+  .calc .hint{font-size:12px;color:var(--muted);margin:0 0 14px}
+  .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:13px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11.5px;color:var(--muted)}
+  .field input,.field select{background:#0d1016;border:1px solid var(--line);border-radius:7px;color:var(--ink);
+    padding:7px 9px;font:13.5px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+  .results{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin-top:18px}
+  .res{background:#0d1016;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .res .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;line-height:1.3}
+  .res .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:4px;letter-spacing:-.3px}
+  .res.hot{border-color:#2f3d57;box-shadow:0 0 0 1px #1f2a3d inset,0 8px 26px -20px var(--accent)}
+  .res .v.warn{color:var(--pitfall)} .res .v.good{color:var(--intuition)} .res .v.blue{color:var(--accent)}
+  .res .s{font-size:11px;color:var(--muted);margin-top:2px}
+  .verdict{margin-top:16px;padding:11px 15px;border-radius:9px;font-size:13.5px;border:1px solid var(--line);background:#0d1016}
+  .verdict.ok{border-color:var(--intuition);color:#bfe9d6} .verdict.bad{border-color:var(--pitfall);color:#f2c4b4}
+  .verdict.warn{border-color:var(--vega);color:#e8d6a6}
+  svg.chart{display:block;width:100%;height:auto;background:#0d1016;border:1px solid var(--line);border-radius:10px;margin-top:16px}
+  .chart .grid{stroke:#1d2230} .chart .axis{stroke:#3a4254} .chart .lbl{fill:#9aa3b2;font-size:11px;font-family:inherit}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:9px}
+  .legend i{display:inline-block;width:11px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  @media(max-width:880px){body{grid-template-columns:1fr}aside{display:none}main{padding:26px 18px 90px}}
+</style>
+</head>
+<body>
+<aside>
+  <div class="brand">Vega · lab</div>
+  <h1>Experiment Design Lab</h1>
+  <div class="meta">Live calculators + the platform-A/B operating manual</div>
+  <div id="chaplist">
+    <div class="tier">Design &amp; size</div>
+    <a class="chap" data-target="ch-flow"><span class="cn">0</span><span>The design workflow</span></a>
+    <a class="chap" data-target="ch-power"><span class="cn">1</span><span>Power, MDE &amp; sample size</span></a>
+    <a class="chap" data-target="ch-roll"><span class="cn">2</span><span>Test &amp; Roll <span style="color:var(--muted);font-size:11px">(profit-max sizing)</span></span></a>
+    <div class="tier" style="margin-top:16px">Read it right</div>
+    <a class="chap" data-target="ch-winner"><span class="cn">3</span><span>Winner's curse <span style="color:var(--muted);font-size:11px">(Type S/M)</span></span></a>
+    <a class="chap" data-target="ch-fpr"><span class="cn">4</span><span>False-positive risk</span></a>
+    <a class="chap" data-target="ch-peek"><span class="cn">5</span><span>Peeking &amp; anytime-valid</span></a>
+    <div class="tier" style="margin-top:16px">Trust</div>
+    <a class="chap" data-target="ch-trust"><span class="cn">6</span><span>SRM &amp; guardrails</span></a>
+  </div>
+  <nav class="toc" id="toc"></nav>
+</aside>
+
+<main>
+
+<!-- ============================ 0 · WORKFLOW ============================ -->
+<section class="chapter" id="ch-flow">
+  <div class="crumb">Vega · operating manual</div>
+  <h2 class="title">The experiment-design workflow</h2>
+  <p class="subtitle">Six decisions, in order — each has a calculator in this lab. The pedagogic companion to the study guide.</p>
+  <p class="lead">An online A/B test is a sequence of decisions made <em>before</em> you see a p-value: what to move, how big a test, how to read it, when to stop, and whether to trust it at all. Get these right and significance takes care of itself.</p>
+
+  <figure>
+    <svg viewBox="0 0 820 250" width="100%" role="img" aria-label="Experiment design decision flow">
+      <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#46506a"/></marker></defs>
+      <g class="node"><rect x="12" y="100" width="118" height="50" rx="9"/><text x="71" y="121" text-anchor="middle">1 · Power</text><text x="71" y="138" text-anchor="middle" class="sub">MDE ↔ N ↔ days</text></g>
+      <g class="node"><rect x="166" y="100" width="118" height="50" rx="9"/><text x="225" y="121" text-anchor="middle">2 · Size rule</text><text x="225" y="138" text-anchor="middle" class="sub">NHST vs T&amp;Roll</text></g>
+      <g class="node hl"><rect x="320" y="40" width="118" height="50" rx="9"/><text x="379" y="61" text-anchor="middle">Run + ramp</text><text x="379" y="78" text-anchor="middle" class="sub">A/A → 1% → …</text></g>
+      <g class="node"><rect x="320" y="160" width="118" height="50" rx="9"/><text x="379" y="181" text-anchor="middle">6 · SRM</text><text x="379" y="198" text-anchor="middle" class="sub">trust gate</text></g>
+      <g class="node"><rect x="474" y="100" width="118" height="50" rx="9"/><text x="533" y="121" text-anchor="middle">5 · Stop rule</text><text x="533" y="138" text-anchor="middle" class="sub">fixed / GST / CS</text></g>
+      <g class="node"><rect x="628" y="100" width="118" height="50" rx="9"/><text x="687" y="118" text-anchor="middle">3·4 · Read</text><text x="687" y="135" text-anchor="middle" class="sub">Type S/M · FPR</text></g>
+      <g class="node"><rect x="760" y="100" width="48" height="50" rx="9"/><text x="784" y="129" text-anchor="middle">Ship</text></g>
+      <path class="edge" d="M130 125 L166 125"/>
+      <path class="edge" d="M284 118 C305 100 300 75 320 66"/>
+      <path class="edge" d="M284 132 C305 150 300 175 320 185"/>
+      <path class="edge" d="M438 66 C460 75 455 100 474 118"/>
+      <path class="edge" d="M438 185 C460 175 455 150 474 132"/>
+      <path class="edge" d="M592 125 L628 125"/>
+      <path class="edge" d="M746 125 L760 125"/>
+    </svg>
+    <figcaption>Power &amp; sizing up front → run with a ramp under an SRM trust-gate → a pre-committed stop rule → read the effect honestly → ship.</figcaption>
+  </figure>
+
+  <h3 id="flow-why"><span class="num">1</span>Why this manual exists</h3>
+  <p>The study guide covers <em>estimators</em> (DML, forests, interference). This lab covers <em>operations</em> — the part of platform
+  experimentation that bites in production: tests are chronically <strong>underpowered</strong>, people <strong>peek</strong>, "significant"
+  underpowered wins are <strong>exaggerated</strong>, and a silent <strong>SRM</strong> quietly invalidates everything. Each tab is a working
+  calculator plus the one paper that justifies it.</p>
+
+  <h3 id="flow-stop"><span class="num">2</span>Choosing a stop rule — the one-table summary</h3>
+  <p>The single biggest operational fork. Full treatment in <a href="#" onclick="show('ch-peek');return false">tab 5</a>; the decision in brief:</p>
+  <table class="tt">
+    <tr><th>Framework</th><th>Anytime-valid?</th><th>Needs a horizon \(N\)?</th><th>Use when</th></tr>
+    <tr><td><strong>Fixed-horizon</strong> (classic)</td><td>no — peeking inflates Type-I to 100%</td><td>yes, committed up front</td><td>you can truly wait for \(n^*\) and not look</td></tr>
+    <tr><td><strong>Group-sequential (GST)</strong> · Lan–DeMets</td><td>within a pre-planned design</td><td><strong>yes</strong></td><td>\(N\) estimable, batch data — <strong>most power</strong></td></tr>
+    <tr><td><strong>mSPRT / AVI</strong> · Johari'17</td><td>yes, any stop \(T\)</td><td>no</td><td>streaming, \(N\) unknown — "pay only for peeks you take"</td></tr>
+    <tr><td><strong>Confidence sequences</strong> · Howard'22</td><td>yes, any stop \(T\)</td><td>no</td><td>nonparametric, robust; the widest (peeking tax)</td></tr>
+    <tr><td><strong>Bonferroni</strong></td><td>yes</td><td>pre-set # looks</td><td>surprisingly competitive at <strong>≤14</strong> looks</td></tr>
+    <tr><td><strong>Test &amp; Roll</strong> · Feit–Berman</td><td>n/a — decision-theoretic</td><td>uses finite \(N\)</td><td>goal is <em>profit</em>, not significance (Vega's ramp)</td></tr>
+  </table>
+  <div class="box vega"><span class="tag">🎯 Vega's stance</span> Vega knows ground-truth \(\tau\) and sets \(N\), so it can <em>measure</em> what each rule costs:
+  GST when the sample size is estimable (most power), <strong>CS / mSPRT for the live replayed dashboard</strong> (the band narrows over the
+  simulated clock), and Test &amp; Roll as the ramp's principled sizing. The whole sequential story survives replay — it lives in the
+  time/data dimension, not transport.</div>
+
+  <footer>Companion to the <a href="index.html">study guide</a>. Sources · <a href="../notation/power-mde.md">power-mde.md</a> · <a href="../notation/anytime-valid.md">anytime-valid.md</a> · <a href="../notation/test-and-roll.md">test-and-roll.md</a> · <a href="../papers/platform-experimentation.md">platform-experimentation.md</a></footer>
+</section>
+
+<!-- ============================ 1 · POWER ============================ -->
+<section class="chapter" id="ch-power">
+  <div class="crumb">Kohavi et al 2026 · "Power Analysis is Essential"</div>
+  <h2 class="title">Power, MDE &amp; sample size</h2>
+  <p class="subtitle">Online effects are tiny (median lift ~0.1–0.3%) — so a real test needs <em>millions</em>. Size it before you run it.</p>
+  <p class="lead">Four knobs trade off: the minimum detectable effect \(\blue\delta\), variance \(\sigma^2\), sample size \(n\), and power \(1-\beta\). Fix three, the fourth is forced. Variance reduction (CUPED) buys power for free by shrinking \(\sigma^2\).</p>
+
+  <span class="keylabel">The sample-size law (per arm, two-sided)</span>
+  <div class="eq key">$$n_{\text{per arm}}=\frac{(z_{1-\alpha/2}+z_{1-\beta})^2\,2\sigma^2}{\blue{\delta}^2}\ \approx\ \frac{16\,\sigma^2}{\blue{\delta}^2}\quad(\alpha{=}.05,\ \text{power}{=}80\%;\ \text{Lehr's rule})$$</div>
+
+  <div class="calc" id="cP">
+    <h4>⚡ Sample-size calculator</h4>
+    <p class="hint">Binary uses \(\sigma^2=p(1-p)\) automatically; continuous takes your own \(\sigma\). MDE can be relative (% of baseline) or absolute.</p>
+    <div class="fields">
+      <div class="field"><label>Metric type</label><select id="P_type"><option value="bin">Binary rate</option><option value="cont">Continuous mean</option></select></div>
+      <div class="field"><label>Baseline (rate or mean)</label><input id="P_base" type="number" step="any" value="0.10"></div>
+      <div class="field" id="P_sigwrap" style="display:none"><label>Std dev σ</label><input id="P_sigma" type="number" step="any" value="1"></div>
+      <div class="field"><label>MDE type</label><select id="P_mtype"><option value="rel">Relative %</option><option value="abs">Absolute</option></select></div>
+      <div class="field"><label>MDE value</label><input id="P_mde" type="number" step="any" value="2"></div>
+      <div class="field"><label>α (two-sided)</label><input id="P_alpha" type="number" step="any" value="0.05"></div>
+      <div class="field"><label>Power 1−β</label><input id="P_power" type="number" step="any" value="0.80"></div>
+      <div class="field"><label>Daily users (both arms)</label><input id="P_daily" type="number" step="any" value="200000"></div>
+    </div>
+    <div class="results">
+      <div class="res"><div class="k">Absolute δ</div><div class="v" id="P_delta">—</div><div class="s" id="P_deltas"></div></div>
+      <div class="res"><div class="k">σ used</div><div class="v" id="P_sig">—</div></div>
+      <div class="res hot"><div class="k">n / arm</div><div class="v blue" id="P_n">—</div></div>
+      <div class="res hot"><div class="k">Total N</div><div class="v" id="P_N">—</div></div>
+      <div class="res"><div class="k">Run length</div><div class="v" id="P_days">—</div><div class="s">days @ traffic</div></div>
+    </div>
+    <div class="verdict" id="P_verdict"></div>
+  </div>
+
+  <h3 id="pw-mde"><span class="num">1</span>Choosing the MDE is the hard part</h3>
+  <p>\(\blue\delta\) is not free — set it from a <strong>prior on effect sizes</strong>: A/B repositories, the company's average lift (~0.3%),
+  or expert elicitation. Classical "small/medium/large" Cohen's-\(d\) thresholds <em>don't transfer</em> online — a "large" 5%-relative
+  win is \(d\approx0.01\). Pick the smallest effect worth shipping, then trade it against duration.</p>
+  <div class="box pitfall"><span class="tag">⚠️ The replication crusher</span> Kohavi's three ~2M-user replications shrank a published <strong>55%</strong> CTR lift to <strong>~0.2%, non-significant</strong>. A "significant" result from a small test is usually noise — see tabs 3 &amp; 4.</div>
+
+  <h3 id="pw-var"><span class="num">2</span>Variance reduction = free power</h3>
+  <p>Because \(n\propto\sigma^2\), halving the variance halves the required sample. <strong>CUPED</strong> (regress out a pre-period covariate)
+  and the DML/AIPW linear case do exactly this — never worse than naive. This is the cheapest power you will ever buy; it feeds the same
+  calculator above through a smaller \(\sigma\).</p>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> The deliverable isn't the number — we <em>set</em> \(N\) — it's the <strong>MDE–duration–power surface</strong>: show the
+  run-length needed to detect Almedia-scale effects, and how much CUPED shaves off. Cross-links <code>inference/cuped.py</code>.</div>
+
+  <footer>Sources · <a href="../notation/power-mde.md">power-mde.md</a> · Kohavi et al 2026</footer>
+</section>
+
+<!-- ============================ 2 · TEST & ROLL ============================ -->
+<section class="chapter" id="ch-roll">
+  <div class="crumb">Feit &amp; Berman 2019 · Kawato &amp; Sakaguchi 2026</div>
+  <h2 class="title">Test &amp; Roll — profit-maximizing sizing</h2>
+  <p class="subtitle">Don't test for significance. Choose the test size that maximizes profit over a finite population, then roll the winner.</p>
+  <p class="lead">A decision-theoretic alternative to power analysis. Some test units get the worse arm (<em>opportunity cost</em>); a wrong call deploys the worse arm to the rest (<em>deployment-error cost</em>). The optimal test balances the two — and is <strong>far smaller</strong> than NHST.</p>
+
+  <span class="keylabel">Profit-maximizing test size (per arm)</span>
+  <div class="eq key">$$n_1^*=n_2^*=\sqrt{\frac{N}{4}\Big(\frac{s}{\sigma}\Big)^2+\frac34\Big(\frac{s}{\sigma}\Big)^4}-\frac34\Big(\frac{s}{\sigma}\Big)^2\ \le\ \frac{\sqrt N\,s}{2\sigma}$$</div>
+  <p style="font-size:12.5px;color:var(--muted);margin:-2px 0 12px">\(N\) = finite population · \(s\) = response-noise SD · \(\sigma\) = prior SD of the mean response. Decision rule = <strong>pick the winner</strong>, no threshold.</p>
+
+  <div class="calc" id="cR">
+    <h4>⚡ Test &amp; Roll vs NHST</h4>
+    <p class="hint">Compares Feit–Berman profit-optimal sizing, the prior-free <em>rule of thirds</em>, and the classical NHST size on the same population.</p>
+    <div class="fields">
+      <div class="field"><label>Population N</label><input id="R_N" type="number" step="any" value="100000"></div>
+      <div class="field"><label>Response noise s</label><input id="R_s" type="number" step="any" value="1"></div>
+      <div class="field"><label>Prior SD σ (of mean)</label><input id="R_sigma" type="number" step="any" value="0.1"></div>
+      <div class="field"><label>NHST: MDE d</label><input id="R_d" type="number" step="any" value="0.05"></div>
+      <div class="field"><label>NHST: α</label><input id="R_alpha" type="number" step="any" value="0.05"></div>
+      <div class="field"><label>NHST: power</label><input id="R_power" type="number" step="any" value="0.80"></div>
+    </div>
+    <div class="results">
+      <div class="res"><div class="k">s / σ</div><div class="v" id="R_ratio">—</div></div>
+      <div class="res hot"><div class="k">T&amp;Roll n* / arm</div><div class="v good" id="R_n">—</div><div class="s" id="R_ntot"></div></div>
+      <div class="res"><div class="k">Rule of thirds</div><div class="v" id="R_third">—</div><div class="s">test ≈ N/3</div></div>
+      <div class="res hot"><div class="k">NHST n / arm</div><div class="v warn" id="R_nhst">—</div><div class="s" id="R_nhsttot"></div></div>
+    </div>
+    <div class="verdict" id="R_verdict"></div>
+  </div>
+
+  <h3 id="tr-props"><span class="num">1</span>Why the test comes out tiny</h3>
+  <ul>
+    <li><strong>Scales with \(\sqrt N\)</strong> — and is always \(<N\). NHST ignores \(N\) entirely.</li>
+    <li><strong>Sub-linear in noise</strong> — grows with \(s\), not \(s^2\); noisy responses give <em>smaller</em> tests (where NHST often demands \(n>N\), Lewis–Rao).</li>
+    <li><strong>Decreases with \(\sigma\)</strong> — more prior uncertainty / bigger expected gap ⇒ a smaller test settles it.</li>
+    <li><strong>Near-bandit</strong> — regret \(O(\sqrt N)\) with only two allocation decisions and a closed form.</li>
+    <li><strong>Asymmetric priors ⇒ unequal arms / tiny holdouts</strong> — rationalizes the "1% holdout" practice.</li>
+  </ul>
+
+  <h3 id="tr-thirds"><span class="num">2</span>Prior-free: the rule of thirds</h3>
+  <p>Test &amp; Roll needs a prior \((\mu,\sigma)\). Kawato–Sakaguchi remove it via welfare-aware <strong>worst-case marginal benefit</strong>:
+  add matched pairs while the worst-case benefit of one more exceeds its exploration cost. The answer is clean —</p>
+  <div class="eq">$$m^*\approx\frac{N}{3}\qquad(\text{test }\sim\tfrac13,\ \text{roll }\sim\tfrac23)$$</div>
+  <p>exact for Gaussian known-variance, a good approximation for Bernoulli. Plug-and-play when you have no prior.</p>
+  <div class="box vega"><span class="tag">🎯 Vega hook — the ramp <em>is</em> test-and-roll</span> A/A → 1% → 5% → 20% → 50% → ship <em>is</em> "test on a subset, roll the winner."
+  OEC = profit = Vega's primary metric (margin per active user), so reward-sizing is literally a test-and-roll decision. With ground truth we can
+  <strong>measure the profit gap</strong> between this sizing and NHST sizing.</div>
+
+  <footer>Sources · <a href="../notation/test-and-roll.md">test-and-roll.md</a> · Feit–Berman 2019 · Kawato–Sakaguchi 2026</footer>
+</section>
+
+<!-- ============================ 3 · WINNER'S CURSE ============================ -->
+<section class="chapter" id="ch-winner">
+  <div class="crumb">Gelman &amp; Carlin 2014 · "Beyond Power Calculations"</div>
+  <h2 class="title">The winner's curse — Type S &amp; Type M</h2>
+  <p class="subtitle">An underpowered <em>and</em> significant estimate is exaggerated, and may even have the wrong sign.</p>
+  <p class="lead">Power isn't only about detection. Conditional on clearing significance, a low-powered estimate overstates the true effect (Type-M, magnitude) and can flip its sign (Type-S). This is the winner's curse that makes small "wins" un-replicable.</p>
+
+  <span class="keylabel">Conditional-on-significance distortions</span>
+  <div class="eq">$$\text{Type-M}=\frac{E\big[\,|\hat\delta|\ \big|\ \text{significant}\big]}{|\blue\delta|},\qquad
+  \text{Type-S}=P\big(\text{wrong sign}\ \big|\ \text{significant}\big)$$</div>
+
+  <div class="calc" id="cW">
+    <h4>⚡ Type S / M calculator</h4>
+    <p class="hint">Estimate \(\hat\delta\sim N(\delta,\,\mathrm{SE}^2)\) with \(\mathrm{SE}=\sqrt{2\sigma^2/n}\). Try a true effect smaller than the SE to see the curse bite.</p>
+    <div class="fields">
+      <div class="field"><label>True effect δ</label><input id="W_delta" type="number" step="any" value="0.2"></div>
+      <div class="field"><label>Std dev σ</label><input id="W_sigma" type="number" step="any" value="1"></div>
+      <div class="field"><label>n / arm</label><input id="W_n" type="number" step="any" value="100"></div>
+      <div class="field"><label>α (two-sided)</label><input id="W_alpha" type="number" step="any" value="0.05"></div>
+    </div>
+    <div class="results">
+      <div class="res"><div class="k">SE</div><div class="v" id="W_se">—</div></div>
+      <div class="res"><div class="k">Power</div><div class="v" id="W_pow">—</div></div>
+      <div class="res hot"><div class="k">Type-M (exaggeration)</div><div class="v warn" id="W_m">—</div><div class="s">× the truth</div></div>
+      <div class="res hot"><div class="k">Type-S (wrong sign)</div><div class="v" id="W_s">—</div></div>
+    </div>
+    <div class="verdict" id="W_verdict"></div>
+  </div>
+
+  <h3 id="wc-bac"><span class="num">1</span>How bad it gets</h3>
+  <p>Gelman–Carlin's running example: at <strong>3% power</strong> the expected exaggeration is <strong>~28×</strong>; at <strong>2.55% power</strong>,
+  <strong>&gt;200×</strong>. So a barely-significant finding from a tiny study doesn't just risk a false positive — when it <em>is</em> real, it
+  reports an effect many times too large (Button et al. 2013, "Power failure").</p>
+  <div class="box intuition"><span class="tag">💡 The mechanism</span> Significance is a filter: \(|\hat\delta|>z_{1-\alpha/2}\,\mathrm{SE}\). When power is low, only the luckiest
+  upward noise draws survive the filter — so the surviving estimates are, by construction, inflated. Raising power shrinks the gap to 1×.</div>
+
+  <h3 id="wc-tel"><span class="num">2</span>Small telescopes (Simonsohn 2015)</h3>
+  <p>The replication question isn't "does it match the original <em>result</em>?" but "was the original <em>design</em> informative?" Define
+  \(d_{33}\) = the effect that would have given the original study 33% power; if the replication effect \(\ll d_{33}\), the original telescope
+  was too small to see anything. Replication \(n\approx 2.5\times\) the original.</p>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> Because Vega knows ground-truth \(\tau\), "underpowered-significant overstates the effect" becomes a
+  <strong>measured, asserted</strong> quantity — a test, exactly like the naive-bias demonstration. Report Type-M alongside every readout, never just \(p<.05\).</div>
+
+  <footer>Sources · <a href="../notation/power-mde.md">power-mde.md</a> §4 · Gelman–Carlin 2014 · Simonsohn 2015</footer>
+</section>
+
+<!-- ============================ 4 · FPR ============================ -->
+<section class="chapter" id="ch-fpr">
+  <div class="crumb">Kohavi et al 2026 · Benjamin et al 2017</div>
+  <h2 class="title">False-positive risk — "significant" ≠ "true"</h2>
+  <p class="subtitle">With a low base rate of real effects, a p&lt;0.05 result is wrong far more than 5% of the time.</p>
+  <p class="lead">\(\alpha\) is \(P(\text{significant}\mid H_0)\) — not \(P(H_0\mid\text{significant})\). Bayes' rule with the base rate \(\pi\) of true effects gives the number that actually matters: how often a "win" is nothing.</p>
+
+  <span class="keylabel">False-positive risk (Bayesian posterior on the null)</span>
+  <div class="eq key">$$\text{FPR}=P(H_0\mid\text{significant})=\frac{(1-\pi)\,\alpha}{(1-\pi)\,\alpha+\pi\,(1-\beta)}$$</div>
+
+  <div class="calc" id="cF">
+    <h4>⚡ False-positive-risk calculator</h4>
+    <p class="hint">Median experiment success rate is ~10% (\(\pi=0.1\)). Watch FPR explode as power drops or the base rate falls.</p>
+    <div class="fields">
+      <div class="field"><label>Base rate π (real effects)</label><input id="F_pi" type="number" step="any" value="0.10"></div>
+      <div class="field"><label>α</label><input id="F_alpha" type="number" step="any" value="0.05"></div>
+      <div class="field"><label>Power 1−β</label><input id="F_power" type="number" step="any" value="0.80"></div>
+    </div>
+    <div class="results">
+      <div class="res hot"><div class="k">False-positive risk</div><div class="v warn" id="F_fpr">—</div><div class="s">P(H₀ | significant)</div></div>
+      <div class="res"><div class="k">True-positive rate</div><div class="v good" id="F_tpr">—</div><div class="s">P(H₁ | significant)</div></div>
+      <div class="res"><div class="k">Discovery odds</div><div class="v" id="F_odds">—</div><div class="s">true : false</div></div>
+    </div>
+    <div class="verdict" id="F_verdict"></div>
+  </div>
+
+  <h3 id="fpr-fix"><span class="num">1</span>What to do about it</h3>
+  <ul>
+    <li><strong>Raise power</strong> — the cheapest lever; FPR is decreasing in \(1-\beta\).</li>
+    <li><strong>Lower \(\alpha\)</strong> — Benjamin et al. 2017 propose \(\alpha=0.005\) for new discoveries.</li>
+    <li><strong>Raise the prior \(\pi\)</strong> — test hypotheses with real mechanism, not 200 cosmetic tweaks.</li>
+    <li><strong>Decide Bayesianly</strong> — report the posterior, not a thresholded p-value.</li>
+  </ul>
+  <div class="box pitfall"><span class="tag">⚠️ Ratio metrics</span> Randomize-by-user but analyze-by-event and the naive variance is wrong → mis-stated power and FPR. Use the
+  <strong>Delta method</strong> (Deng–Knoblich–Lu 2018) for ratio metrics; <strong>Fieller's theorem</strong> for ratio CIs.</div>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> Decoys and A/A nulls set \(\pi\) explicitly in the sim — so Vega can show the realized FPR matching this formula, and
+  demonstrate why a portfolio of mostly-null tests needs FDR control, not per-test \(\alpha\).</div>
+
+  <footer>Sources · <a href="../notation/power-mde.md">power-mde.md</a> §5 · Kohavi et al 2026 · Benjamin et al 2017</footer>
+</section>
+
+<!-- ============================ 5 · PEEKING ============================ -->
+<section class="chapter" id="ch-peek">
+  <div class="crumb">Johari et al 2017 · Howard et al 2022 · Spotify cluster</div>
+  <h2 class="title">Peeking &amp; anytime-valid inference</h2>
+  <p class="subtitle">Continuous monitoring with fixed-horizon p-values drives Type-I error toward 100%. The fix lives in the time/data dimension.</p>
+  <p class="lead">A fixed-horizon p-value is valid at <em>one</em> pre-committed \(n\). Reject the first time \(p_t\le\alpha\) and, by the law of the iterated logarithm, you are <em>guaranteed</em> to cross any fixed \(\alpha\) eventually. Anytime-valid methods control error <em>simultaneously over all \(t\)</em>.</p>
+
+  <h3 id="pk-infl"><span class="num">1</span>The cost of naive peeking</h3>
+  <p>Simulate an A/A test (no true effect) and reject the first time a standard z-test dips below \(\alpha=0.05\), checking at \(K\) evenly
+  spaced looks. The realized false-positive rate climbs with every look:</p>
+  <div class="calc" id="cK">
+    <h4>⚡ Naive-peeking Type-I inflation (Monte-Carlo)</h4>
+    <p class="hint">Live simulation of an A/A test under continuous monitoring — the realized error vs the nominal 5%.</p>
+    <div class="fields">
+      <div class="field"><label>Number of looks K</label><input id="K_looks" type="number" step="1" value="10"></div>
+      <div class="field"><label>Nominal α</label><input id="K_alpha" type="number" step="any" value="0.05"></div>
+      <div class="field"><label>Simulations</label><input id="K_sims" type="number" step="any" value="20000"></div>
+    </div>
+    <div class="results">
+      <div class="res hot"><div class="k">Realized Type-I</div><div class="v warn" id="K_real">—</div><div class="s">peeking at every look</div></div>
+      <div class="res"><div class="k">Nominal</div><div class="v" id="K_nom">—</div></div>
+      <div class="res"><div class="k">Inflation</div><div class="v warn" id="K_mult">—</div><div class="s">× the nominal</div></div>
+    </div>
+    <div class="verdict" id="K_verdict"></div>
+  </div>
+
+  <h3 id="pk-av"><span class="num">2</span>Always-valid p-values &amp; confidence sequences</h3>
+  <p>A sequence \((p_t)\) is <strong>always-valid</strong> if for <em>any</em> stopping time \(T\): \(P_{\theta_0}(p_T\le s)\le s\). The dual object
+  is a <strong>confidence sequence</strong> — intervals with <em>time-uniform</em> coverage:</p>
+  <div class="eq key">$$P\big(\forall t\ge 1:\ \theta\in CI_t\big)\ge 1-\alpha\quad\Longrightarrow\quad\text{safe to peek/stop anytime}$$</div>
+  <p>Concrete sub-Gaussian CS for the mean (Howard et al. 2022) — half-width relative to the fixed-\(n\) CI:</p>
+  <div class="eq">$$\underbrace{1.7\,\sigma\sqrt{\tfrac{\log\log(2t)+0.72\log(10.4/\alpha)}{t}}}_{\text{CS half-width}}\quad\text{vs}\quad\underbrace{z_{1-\alpha/2}\,\sigma/\sqrt t}_{\text{fixed-}n}$$</div>
+  <p>The extra \(\log\log t\) is the unavoidable <strong>price of peeking</strong> — width still \(\to 0\), just at the LIL rate. The chart shows the tax:</p>
+  <div class="calc" id="cC">
+    <p class="hint" style="margin-bottom:6px">CS vs fixed-\(n\) half-width over sample size (σ=1). The gap is what you pay for the right to stop anytime.</p>
+    <div class="fields" style="max-width:300px">
+      <div class="field"><label>α</label><input id="C_alpha" type="number" step="any" value="0.05"></div>
+    </div>
+    <svg class="chart" id="C_chart" viewBox="0 0 760 300" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legend"><span><i style="background:#6ea8fe"></i>fixed-n CI</span><span><i style="background:#e0795b"></i>confidence sequence</span><span id="C_tax" style="color:var(--vega)"></span></div>
+  </div>
+
+  <h3 id="pk-frame"><span class="num">3</span>Which framework — the verdict</h3>
+  <p>(Full table on <a href="#" onclick="show('ch-flow');return false">tab 0</a>.) Spotify's rule of thumb, from their Confidence platform series:</p>
+  <div class="box intuition"><span class="tag">💡 GST vs AVI</span> <strong>GST when the sample size is estimable</strong> (batch data, most power); <strong>AVI / mSPRT when \(N\)
+  is unknown or data streams</strong> (you only pay for the peeking you make). <strong>Bonferroni</strong> is surprisingly competitive at ≤14 looks.</div>
+
+  <h3 id="pk-long"><span class="num">4</span>Peeking 2.0 — within-unit peeking</h3>
+  <p>The subtler hazard: peeking at a unit <em>before all its measurements are in</em>. With repeated measures per user the within-unit covariance is
+  unmodeled (inflated FPR) <em>and</em> the estimand itself shifts between looks. Fix: a longitudinal GLS regression
+  \(y_{it}=\beta_0+\delta\,d_{it}+\varepsilon_{it}\), then a GST exploiting the estimator's <strong>independent-increments</strong> property.</p>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> Agents emit many events over the horizon, so reading the event log sequentially <em>is</em> within-unit peeking. The
+  dashboard's confidence-sequence band narrows over the <strong>replayed</strong> simulated clock — the whole sequential story is intact under replay.
+  <code>inference/anytime_valid.py</code> defaults to an asymptotic CS, mSPRT optional.</div>
+
+  <h3 id="pk-fixed"><span class="num">5</span>Fixed-power — "it's not <em>if</em> you peek, it's <em>what</em> you peek at"</h3>
+  <p>Nordin–Schultzberg 2024: not all stopping rules are equally harmful. Peeking at the <strong>variance function</strong> (to estimate the required
+  \(N\)) barely hurts; peeking at <strong>significance</strong> badly does. So estimate \(N\) from accruing data, stop when reached, and analyze with
+  <strong>ordinary non-sequential</strong> methods — no correction. Bonus: rules that stop <em>on significance</em> bias the effect upward (the Type-M curse, tab 3).</p>
+
+  <footer>Sources · <a href="../notation/anytime-valid.md">anytime-valid.md</a> · Johari et al 2017 · Howard et al 2022 · Nordin–Schultzberg 2024</footer>
+</section>
+
+<!-- ============================ 6 · SRM ============================ -->
+<section class="chapter" id="ch-trust">
+  <div class="crumb">Kohavi et al 2026 · Nie et al 2022 (eBay)</div>
+  <h2 class="title">SRM &amp; trust guardrails</h2>
+  <p class="subtitle">If the realized split doesn't match the design, stop — the experiment is untrustworthy, full stop.</p>
+  <p class="lead">A <strong>Sample Ratio Mismatch</strong> means the assignment mechanism is broken (bot filtering, redirects, logging races). No clever analysis survives it. Test the realized counts against the designed ratio; a minuscule p-value is a hard stop, not a curiosity.</p>
+
+  <span class="keylabel">SRM test (\(\chi^2\), 1 d.o.f.)</span>
+  <div class="eq key">$$\chi^2=\sum_{a\in\{T,C\}}\frac{(n_a-E_a)^2}{E_a},\qquad E_T=\rho\,(n_T{+}n_C),\ \ E_C=(1-\rho)(n_T{+}n_C)$$</div>
+
+  <div class="calc" id="cS">
+    <h4>⚡ SRM checker</h4>
+    <p class="hint">Designed share is the intended treatment fraction (0.5 for a 50/50 split). A p-value below ~0.001 is the standard kill threshold.</p>
+    <div class="fields">
+      <div class="field"><label>Treatment count n_T</label><input id="S_nt" type="number" step="any" value="821588"></div>
+      <div class="field"><label>Control count n_C</label><input id="S_nc" type="number" step="any" value="815482"></div>
+      <div class="field"><label>Designed T share ρ</label><input id="S_rho" type="number" step="any" value="0.5"></div>
+    </div>
+    <div class="results">
+      <div class="res"><div class="k">Realized split</div><div class="v" id="S_split">—</div></div>
+      <div class="res"><div class="k">χ²</div><div class="v" id="S_chi">—</div></div>
+      <div class="res hot"><div class="k">p-value</div><div class="v" id="S_p">—</div></div>
+    </div>
+    <div class="verdict" id="S_verdict"></div>
+  </div>
+
+  <h3 id="srm-causes"><span class="num">1</span>Common causes &amp; the eBay leg</h3>
+  <p>SRM is the canary for the whole trust stack: broken randomization, bot/scraper traffic in one arm, redirect latency, delayed logging,
+  carryover from a prior test. Nie et al. 2022 (eBay) operationalize this at scale — randomization validation plus a <strong>Population Stability
+  Index</strong> on covariates, all via sequential analysis so it can flag mid-flight.</p>
+
+  <h3 id="srm-vega"><span class="num">2</span>In Vega</h3>
+  <div class="box vega"><span class="tag">🎯 Vega hook — an emitter invariant</span> SRM is enforced at write time (<code>EVENT_LOG §6.6</code>): realized arm shares vs the declared
+  <code>allocation</code>. It surfaces as a dashboard health flag and as <code>tests/test_aa_null.py</code> — A/A must not flag <em>and</em> must pass SRM.
+  Pairs with the false-positive-risk view (tab 4): trust gates first, inference second.</div>
+  <div class="box pitfall"><span class="tag">⚠️ Don't "fix" an SRM by reweighting</span> A significant SRM means the data-generating process is broken; post-hoc reweighting hides the
+  symptom and ships the bug. The only correct response is to find the cause and rerun.</div>
+
+  <footer>Sources · <a href="../notation/power-mde.md">power-mde.md</a> §3 · Nie et al 2022 · Kohavi et al 2026</footer>
+</section>
+
+</main>
+
+<script>
+/* ---------- math helpers ---------- */
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+  return s*y;}
+function Phi(x){return 0.5*(1+erf(x/Math.SQRT2));}
+function phi(x){return Math.exp(-0.5*x*x)/Math.sqrt(2*Math.PI);}
+function Pinv(p){
+  if(p<=0)return -Infinity; if(p>=1)return Infinity;
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pl=0.02425,ph=1-pl;let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p<=ph){q=p-0.5;r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+  q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+}
+/* ---------- formatting ---------- */
+const $=id=>document.getElementById(id);
+const v=id=>parseFloat($(id).value);
+function commas(n){if(!isFinite(n))return '∞';return Math.round(n).toLocaleString('en-US');}
+function sig(x,d=3){if(!isFinite(x))return '∞';if(x===0)return '0';
+  const a=Math.abs(x);if(a>=1e6||a<1e-4)return x.toExponential(2);
+  return (+x.toPrecision(d)).toString();}
+function pct(x,d=1){return (100*x).toFixed(d)+'%';}
+function setV(id,txt,cls){const e=$(id);e.textContent=txt;e.className='v'+(cls?' '+cls:'');}
+
+/* ================= 1 · POWER ================= */
+function calcPower(){
+  const type=$('P_type').value;
+  $('P_sigwrap').style.display = type==='cont'?'flex':'none';
+  const base=v('P_base'), alpha=v('P_alpha'), power=v('P_power'), daily=v('P_daily');
+  let sigma = type==='bin' ? Math.sqrt(Math.max(base*(1-base),0)) : v('P_sigma');
+  let delta = $('P_mtype').value==='rel' ? base*(v('P_mde')/100) : v('P_mde');
+  const z = Pinv(1-alpha/2)+Pinv(power);
+  const n = z*z*2*sigma*sigma/(delta*delta);
+  const N = 2*n, days = N/daily;
+  setV('P_delta', sig(delta,4)); $('P_deltas').textContent = $('P_mtype').value==='rel'? v('P_mde')+'% of base':'absolute';
+  setV('P_sig', sig(sigma,4));
+  setV('P_n', commas(n),'blue'); setV('P_N', commas(N));
+  setV('P_days', isFinite(days)? sig(days,3):'—', days>60?'warn':'good');
+  const vd=$('P_verdict');
+  if(!isFinite(n)||delta===0){vd.className='verdict bad';vd.textContent='Set a non-zero MDE.';return;}
+  if(days>60){vd.className='verdict warn';vd.textContent=`Needs ${commas(N)} users ≈ ${sig(days,2)} days — longer than a typical 4–8 week horizon. Lower the MDE bar, cut variance with CUPED, or accept less power.`;}
+  else{vd.className='verdict ok';vd.textContent=`Feasible: ${commas(N)} users ≈ ${sig(days,2)} days at current traffic. Lehr's rule sanity-check ≈ ${commas(16*sigma*sigma/(delta*delta))}/arm.`;}
+}
+
+/* ================= 2 · TEST & ROLL ================= */
+function calcRoll(){
+  const N=v('R_N'), s=v('R_s'), sigma=v('R_sigma'), d=v('R_d'), alpha=v('R_alpha'), power=v('R_power');
+  const k=s/sigma;
+  const n = Math.sqrt(N/4*k*k + 0.75*k*k*k*k) - 0.75*k*k;
+  const third = N/3;
+  const z=Pinv(1-alpha/2)+Pinv(power);
+  const nhst = z*z*2*s*s/(d*d);
+  setV('R_ratio', sig(k,3));
+  setV('R_n', commas(n),'good'); $('R_ntot').textContent='test 2n* = '+commas(2*n);
+  setV('R_third', commas(third));
+  setV('R_nhst', commas(nhst),'warn'); $('R_nhsttot').textContent = nhst>N/2?'> N/2 — infeasible':'2n = '+commas(2*nhst);
+  const vd=$('R_verdict');
+  const ratio = nhst/n;
+  if(2*nhst>N){vd.className='verdict bad';vd.textContent=`NHST wants ${commas(nhst)}/arm — more than the population can supply. Test & Roll sizes ${commas(n)}/arm (${sig(ratio,2)}× smaller) and still maximizes profit by rolling the winner.`;}
+  else{vd.className='verdict ok';vd.textContent=`Test & Roll: ${commas(n)}/arm vs NHST ${commas(nhst)}/arm — ${sig(ratio,2)}× smaller. Spend the saved ${commas(2*(nhst-n)>0?2*(nhst-n):0)} users on the rolled winner.`;}
+}
+
+/* ================= 3 · WINNER'S CURSE ================= */
+function calcWinner(){
+  const delta=Math.abs(v('W_delta')), sigma=v('W_sigma'), n=v('W_n'), alpha=v('W_alpha');
+  const se=Math.sqrt(2*sigma*sigma/n);
+  const k=Pinv(1-alpha/2), d=delta/se;
+  const powUp=Phi(d-k), powDn=Phi(-d-k), power=powUp+powDn;
+  const typeS = power>0 ? powDn/power : 0;
+  // E[|est| 1{|est|>c}] = delta[Φ(d-k)-Φ(-k-d)] + se[φ(d-k)+φ(-k-d)]
+  const eAbs = delta*(powUp-powDn) + se*(phi(d-k)+phi(-d-k));
+  const typeM = (power>0 && delta>0) ? eAbs/(delta*power) : Infinity;
+  setV('W_se', sig(se,3));
+  setV('W_pow', pct(power), power<0.5?'warn':'good');
+  setV('W_m', '×'+sig(typeM,3), typeM>1.5?'warn':'good');
+  setV('W_s', pct(typeS,2), typeS>0.01?'warn':'good');
+  const vd=$('W_verdict');
+  if(power<0.3){vd.className='verdict bad';vd.textContent=`At ${pct(power)} power, a significant estimate exaggerates the truth by ~${sig(typeM,2)}× and has a ${pct(typeS,2)} chance of the wrong sign. This is the winner's curse — don't trust the magnitude.`;}
+  else if(typeM>1.3){vd.className='verdict warn';vd.textContent=`Type-M ${sig(typeM,2)}×: significant wins still overstate the effect. Raise power toward 80%+ to bring exaggeration near 1×.`;}
+  else{vd.className='verdict ok';vd.textContent=`Well-powered (${pct(power)}): exaggeration ${sig(typeM,2)}× is mild and sign errors are negligible.`;}
+}
+
+/* ================= 4 · FPR ================= */
+function calcFPR(){
+  const pi=v('F_pi'), alpha=v('F_alpha'), power=v('F_power');
+  const fp=(1-pi)*alpha, tp=pi*power, fpr=fp/(fp+tp), tpr=tp/(fp+tp);
+  setV('F_fpr', pct(fpr), fpr>0.1?'warn':'good');
+  setV('F_tpr', pct(tpr),'good');
+  setV('F_odds', sig(tp/fp,2)+' : 1');
+  const vd=$('F_verdict');
+  if(fpr>0.25){vd.className='verdict bad';vd.textContent=`${pct(fpr)} of your "significant" wins are nothing. p<α controls the wrong error — raise power, lower α (→0.005), or test better hypotheses.`;}
+  else if(fpr>0.1){vd.className='verdict warn';vd.textContent=`${pct(fpr)} false-positive risk — meaningfully above the nominal ${pct(alpha)}. Worth tightening before you ship on a single test.`;}
+  else{vd.className='verdict ok';vd.textContent=`${pct(fpr)} false-positive risk — healthy. High base rate × high power keeps discoveries trustworthy.`;}
+}
+
+/* ================= 5a · PEEKING MONTE-CARLO ================= */
+function gauss(){ // Box-Muller
+  let u=0,w=0; while(u===0)u=Math.random(); while(w===0)w=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*w);
+}
+function calcPeek(){
+  const K=Math.max(1,Math.round(v('K_looks'))), alpha=v('K_alpha'), sims=Math.min(200000,Math.max(1000,Math.round(v('K_sims'))));
+  const crit=Pinv(1-alpha/2);
+  const per=Math.max(50, Math.round(2000/K)); // increment of paired obs per look
+  let rejects=0;
+  for(let s=0;s<sims;s++){
+    let sum=0, count=0, hit=false;
+    for(let look=0;look<K;look++){
+      for(let i=0;i<per;i++){ sum+=gauss(); count++; } // diff-of-means ~ N(0,1) increments under A/A
+      const se=Math.sqrt(count); const z=sum/se;
+      if(Math.abs(z)>crit){hit=true;break;}
+    }
+    if(hit)rejects++;
+  }
+  const real=rejects/sims;
+  setV('K_real', pct(real,1),'warn');
+  setV('K_nom', pct(alpha,1));
+  setV('K_mult', '×'+sig(real/alpha,2),'warn');
+  const vd=$('K_verdict');
+  vd.className='verdict bad';
+  vd.textContent=`Peeking at ${K} looks turns a nominal ${pct(alpha)} test into ${pct(real,1)} realized Type-I (${sig(real/alpha,2)}× inflation). Wait long enough and it approaches 100% — this is exactly what always-valid methods fix.`;
+}
+
+/* ================= 5b · CS-vs-FIXED CHART ================= */
+function drawCS(){
+  const alpha=v('C_alpha'); const svg=$('C_chart');
+  const W=760,H=300,mL=58,mR=20,mT=18,mB=42;
+  const t0=100,t1=200000;
+  const lx0=Math.log10(t0),lx1=Math.log10(t1);
+  const z=Pinv(1-alpha/2);
+  const fixed=t=>z/Math.sqrt(t);
+  const cs=t=>1.7*Math.sqrt((Math.log(Math.log(2*t))+0.72*Math.log(10.4/alpha))/t);
+  let ymax=cs(t0); // CS widest at small t
+  const X=t=>mL+(Math.log10(t)-lx0)/(lx1-lx0)*(W-mL-mR);
+  const Y=y=>mT+(1-y/ymax)*(H-mT-mB);
+  let s='';
+  // grid + axes
+  s+=`<line class="axis" x1="${mL}" y1="${H-mB}" x2="${W-mR}" y2="${H-mB}"/>`;
+  s+=`<line class="axis" x1="${mL}" y1="${mT}" x2="${mL}" y2="${H-mB}"/>`;
+  for(let e=2;e<=5;e++){const tx=Math.pow(10,e);const x=X(tx);
+    s+=`<line class="grid" x1="${x}" y1="${mT}" x2="${x}" y2="${H-mB}"/>`;
+    s+=`<text class="lbl" x="${x}" y="${H-mB+16}" text-anchor="middle">10^${e}</text>`;}
+  for(let g=0;g<=4;g++){const yy=ymax*g/4;const y=Y(yy);
+    s+=`<line class="grid" x1="${mL}" y1="${y}" x2="${W-mR}" y2="${y}"/>`;
+    s+=`<text class="lbl" x="${mL-8}" y="${y+4}" text-anchor="end">${yy.toFixed(2)}</text>`;}
+  s+=`<text class="lbl" x="${(mL+W-mR)/2}" y="${H-6}" text-anchor="middle">sample size t (log scale)</text>`;
+  s+=`<text class="lbl" transform="rotate(-90 16 ${(mT+H-mB)/2})" x="16" y="${(mT+H-mB)/2}" text-anchor="middle">CI half-width (σ=1)</text>`;
+  // curves
+  const path=f=>{let p='';for(let i=0;i<=120;i++){const lt=lx0+(lx1-lx0)*i/120;const t=Math.pow(10,lt);
+    p+=(i?'L':'M')+X(t).toFixed(1)+' '+Y(f(t)).toFixed(1)+' ';}return p;};
+  s+=`<path d="${path(fixed)}" fill="none" stroke="#6ea8fe" stroke-width="2.2"/>`;
+  s+=`<path d="${path(cs)}" fill="none" stroke="#e0795b" stroke-width="2.2"/>`;
+  svg.innerHTML=s;
+  // tax at a reference t
+  const tref=10000;
+  $('C_tax').textContent=`peeking tax @ t=10k: ${sig(cs(tref)/fixed(tref),2)}× wider`;
+}
+
+/* ================= 6 · SRM ================= */
+function calcSRM(){
+  const nt=v('S_nt'), nc=v('S_nc'), rho=v('S_rho'); const N=nt+nc;
+  const eT=rho*N, eC=(1-rho)*N;
+  const chi=(nt-eT)*(nt-eT)/eT + (nc-eC)*(nc-eC)/eC;
+  const p=2*(1-Phi(Math.sqrt(Math.max(chi,0)))); // chi-sq_1 tail
+  setV('S_split', (nt/N*100).toFixed(2)+' / '+(nc/N*100).toFixed(2));
+  setV('S_chi', sig(chi,4));
+  setV('S_p', p<1e-4?p.toExponential(2):sig(p,3), p<0.001?'warn':'good');
+  const vd=$('S_verdict');
+  if(p<0.001){vd.className='verdict bad';vd.textContent=`SRM detected (p=${p<1e-4?p.toExponential(2):sig(p,3)} < 0.001). The assignment mechanism is broken — STOP, find the cause (bots, redirects, logging), and rerun. Do not analyze or reweight.`;}
+  else if(p<0.05){vd.className='verdict warn';vd.textContent=`Borderline (p=${sig(p,3)}). Not a hard kill, but watch it — investigate if it persists as the sample grows.`;}
+  else{vd.className='verdict ok';vd.textContent=`No SRM (p=${sig(p,3)}). Realized split is consistent with the ${pct(rho,0)} design — the trust gate passes.`;}
+}
+
+/* ---------- wire up ---------- */
+const wires={
+  cP:['P_type','P_base','P_sigma','P_mtype','P_mde','P_alpha','P_power','P_daily',calcPower],
+  cR:['R_N','R_s','R_sigma','R_d','R_alpha','R_power',calcRoll],
+  cW:['W_delta','W_sigma','W_n','W_alpha',calcWinner],
+  cF:['F_pi','F_alpha','F_power',calcFPR],
+  cK:['K_looks','K_alpha','K_sims',calcPeek],
+  cC:['C_alpha',drawCS],
+  cS:['S_nt','S_nc','S_rho',calcSRM]
+};
+Object.values(wires).forEach(arr=>{
+  const fn=arr[arr.length-1];
+  arr.slice(0,-1).forEach(id=>{const el=$(id);if(el){el.addEventListener('input',fn);el.addEventListener('change',fn);}});
+});
+
+/* ---------- nav / TOC (shared with study guide) ---------- */
+const chaps=[...document.querySelectorAll('.chap')];
+const toc=document.getElementById('toc');
+let io=null;
+function buildTOC(sec){
+  toc.innerHTML='';
+  sec.querySelectorAll('h3[id]').forEach(h=>{
+    const a=document.createElement('a');a.href='#'+h.id;
+    a.textContent=h.textContent.replace(/^\s*\d+(·\d+)?\s*/,'').trim();
+    a.onclick=e=>{e.preventDefault();h.scrollIntoView();};
+    toc.appendChild(a);
+  });
+  const links=[...toc.querySelectorAll('a')];
+  const hs=[...sec.querySelectorAll('h3[id]')];
+  const map=new Map(hs.map((h,i)=>[h.id,links[i]]));
+  if(io)io.disconnect();
+  io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){
+    links.forEach(l=>l.classList.remove('on'));const a=map.get(e.target.id);if(a)a.classList.add('on');}})},
+    {rootMargin:'-15% 0px -75% 0px'});
+  hs.forEach(h=>io.observe(h));
+}
+const calcByChapter={'ch-power':calcPower,'ch-roll':calcRoll,'ch-winner':calcWinner,
+  'ch-fpr':calcFPR,'ch-peek':()=>{drawCS();},'ch-trust':calcSRM};
+function show(id){
+  document.querySelectorAll('.chapter').forEach(s=>s.classList.toggle('show',s.id===id));
+  chaps.forEach(c=>c.classList.toggle('active',c.dataset.target===id));
+  const sec=document.getElementById(id);buildTOC(sec);
+  window.scrollTo({top:0});location.hash=id;
+  if(calcByChapter[id])calcByChapter[id]();
+  if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([sec]);
+}
+chaps.forEach(c=>c.onclick=()=>show(c.dataset.target));
+// run all calculators once so values are ready before first view
+[calcPower,calcRoll,calcWinner,calcFPR,drawCS,calcSRM].forEach(f=>{try{f();}catch(e){}});
+const fromHash=location.hash.slice(1);
+show(fromHash && document.getElementById(fromHash) ? fromHash : 'ch-flow');
+</script>
+</body>
+</html>

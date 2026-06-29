@@ -1,0 +1,46 @@
+/*-- scss:defaults --*/
+// Lyra doc theme — echoes the app: navy ink, blue accent, Fraunces serif display, IBM Plex Mono.
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+$font-family-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+$font-family-monospace:  "IBM Plex Mono", ui-monospace, Menlo, monospace;
+$headings-font-family:   "Fraunces", Georgia, serif;
+
+$body-color:    #1a2233;
+$link-color:    #1E6091;
+$primary:       #1E6091;
+$code-color:    #18507B;
+$border-color:  #E7ECF4;
+
+/*-- scss:rules --*/
+body { font-size: 15px; line-height: 1.62; }
+
+h1, h2, h3, h4 { font-family: "Fraunces", Georgia, serif; font-weight: 600; letter-spacing: -.01em; }
+h1.title { font-weight: 600; }
+h2 { margin-top: 2.2rem; padding-top: .4rem; border-top: 1px solid #EEF2F7; }
+
+// section labels / sidebar in mono for the "data product" feel
+.sidebar-title, .sidebar nav .menu-text { font-size: .92rem; }
+.sidebar-section .menu-text { font-family: "IBM Plex Mono", monospace; font-size: .72rem;
+  text-transform: uppercase; letter-spacing: .06em; color: #6B7A90; }
+
+// a callout-ish "key idea" lead paragraph
+.lead { font-size: 1.08rem; color: #334155; }
+
+// KaTeX a touch larger for readability
+.katex { font-size: 1.04em; }
+.katex-display { margin: 1.1rem 0; }
+
+// inline code + blocks
+code { font-family: "IBM Plex Mono", monospace; font-size: .86em; }
+div.sourceCode { border-radius: 10px; }
+
+// tables: tabular mono numbers
+table { font-size: .92rem; }
+
+// the "certified" green + "naive/bias" red used throughout the prose
+.cert { color: #16A34A; font-weight: 600; }
+.bias { color: #C2410C; font-weight: 600; }
+
+// callout tweak
+.callout { border-radius: 11px; }

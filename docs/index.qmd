@@ -1,0 +1,75 @@
+---
+title: "Lyra — experimentation you can trust"
+subtitle: "A platform where every estimator is certified against a *known ground truth*."
+---
+
+::: {.lead}
+Most experimentation platforms can tell you *what* their estimator reported. Lyra can tell you whether
+that report is **right** — because every experiment runs on a simulator whose ground truth we authored, so
+the platform can check that each estimator **recovers the known effect with correct coverage** before it is
+trusted. This guide explains how, method by method.
+:::
+
+This is the companion to the [live demo](https://lyra-five-sable.vercel.app). Where the demo is the product
+surface, this guide is the **method documentation** — the problem each estimator solves, the math behind it,
+and the recovery evidence that certifies it.
+
+## The core move {#sec-core}
+
+A real platform faces a hard epistemic problem: the treatment effect $\tau$ is *never observed*. You see an
+estimate $\hat\tau$ and a confidence interval, but you can never check them against truth — the
+counterfactual is missing by definition. So "is this estimator correct here?" is, on real data,
+**unanswerable**.
+
+Lyra dissolves the problem by **authoring the world**. A data-generating process (DGP) plants a known
+effect $\tau$; an estimator sees only the observable data and returns $(\hat\tau, \widehat{\mathrm{CI}})$;
+and a Monte-Carlo harness repeats this over many draws to measure whether the estimator is **unbiased** and
+whether its intervals **cover the truth at their nominal rate**:
+
+$$
+\text{bias} = \mathbb{E}[\hat\tau] - \tau,
+\qquad
+\text{coverage} = \Pr\!\big(\tau \in \widehat{\mathrm{CI}}_{1-\alpha}\big) \overset{!}{=} 1-\alpha .
+$$
+
+Coverage against a *known* $\tau$ is the **certification test**. An estimator that recovers $\tau$ with
+nominal coverage on the world that generated the data earns a `certified` badge; one that doesn't is flagged
+`uncertified` — and the bias becomes a *measured, asserted quantity*, not a worry. This single loop (see
+[the recovery harness](harness.qmd)) certifies every method in this guide.
+
+## Why this matters {#sec-why}
+
+The discipline turns soft methodological debates into hard pass/fail checks:
+
+- The **naive estimator's bias** under confounding or interference is not argued — it is [measured]{.bias}
+  (e.g. a marketplace A/B reads `uncertified`, the corrected design reads `certified`).
+- A new estimator is not adopted on faith — it must clear a **ground-truth recovery grid** first.
+- "If you debug it twice, automate it": a repeated manual check becomes a coverage test in the harness.
+
+## The architecture {#sec-arch}
+
+Lyra keeps four layers decoupled, so each can be reasoned about — and certified — on its own:
+
+| Layer | What it does | In this guide |
+|---|---|---|
+| **DGP** | authors a world with a known $\tau$ (the fidelity ladder, from i.i.d. to a full marketplace) | The DGP zoo |
+| **Chassis** | assignment · governed metrics · lifecycle · the ship rule (the thin-but-real platform) | (the live demo) |
+| **Inference** | the estimator library — the crown jewel; each method below | Methods |
+| **Harness** | the Monte-Carlo loop that certifies any estimator against any DGP | [The harness](harness.qmd) |
+
+Estimators **guess**; DGPs **know**. Their symmetry *is* the architecture: build the certification loop once,
+and every method added later earns a "certified: yes/no" badge for free.
+
+## How to read this guide {#sec-read}
+
+Each method chapter follows the same shape:
+
+1. **The problem** — what breaks if you reach for the naive estimator.
+2. **The math** — the estimand, the estimator, its influence function / variance, recycled from the
+   notebook curriculum and the notation sheets.
+3. **The certification** — the recovery result: bias $\to 0$, coverage $\to 1-\alpha$ on the world that
+   plants the effect, with the naive comparator failing visibly.
+
+Start with **[the recovery harness](harness.qmd)** — the engine that makes every later claim checkable —
+then move through the methods. The applied *study cases* (rewarded UA, on-demand surge, marketplace
+interference, checkout, ads incrementality, personalization) recur as motivating examples throughout.

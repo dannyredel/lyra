@@ -1,0 +1,132 @@
+---
+title: "Average treatment effects"
+subtitle: "From difference-in-means to doubly-robust DML — and why the harness prefers the last one."
+---
+
+::: {.lead}
+The average treatment effect is the spine of the platform: the number an A/B test reports. This chapter
+walks the estimator ladder — naive difference, regression adjustment, inverse-propensity weighting, and the
+doubly-robust AIPW/DML workhorse — and shows, via the harness, which rungs survive confounding and which
+quietly break. *(Math recycled from `notation/ate-estimators.md`, after Wager ch. 1–3 and Imbens–Wooldridge
+2009.)*
+:::
+
+## Estimand & assumptions {#sec-estimand}
+
+With treatment $W\in\{0,1\}$, potential outcomes $Y(1),Y(0)$, and observed $Y=Y(W)$, the target is
+
+$$
+\tau = \mathbb{E}\!\left[Y_i(1)-Y_i(0)\right].
+$$
+
+The fundamental problem is that $\Delta_i = Y_i(1)-Y_i(0)$ is *never* observed for any single unit. Recovery
+rests on the standard trio:
+
+1. **SUTVA** — $Y_i = Y_i(W_i)$ (no interference; one version of treatment).
+2. **Unconfoundedness** — $\{Y_i(0),Y_i(1)\} \perp\!\!\!\perp W_i \mid X_i$.
+3. **Overlap** — $\eta \le e(x) \le 1-\eta$, where $e(x)=\Pr(W=1\mid X=x)$ is the **propensity**.
+
+In a randomized experiment, (2) holds *by design* with $e(x)=\pi$ known — and because Lyra's DGP *sets*
+$e(x)$, overlap holds by construction, which is exactly what makes clean recovery tests possible.
+
+## The ladder {#sec-ladder}
+
+### Difference-in-means {#sec-dm}
+
+The randomized baseline, unbiased essentially without assumptions:
+
+$$
+\hat\tau_{\text{DM}}=\frac1{n_1}\sum_{W_i=1}Y_i-\frac1{n_0}\sum_{W_i=0}Y_i,
+\qquad
+V_{\text{DM}}=\frac{\operatorname{Var}[Y(1)]}{\pi}+\frac{\operatorname{Var}[Y(0)]}{1-\pi}.
+$$
+
+It is the platform's deliberately-[biased]{.bias} comparator the moment assignment is *not* random —
+confounding, interference, ramp-selection. The harness measures exactly how biased.
+
+### Regression adjustment / CUPED {#sec-ireg}
+
+Fit the **interacted** regression $Y_i \sim \alpha + W_i\tau + X_i\beta + W_i X_i\gamma$ and report
+$\hat\tau_{\text{IREG}}=\hat\tau+\bar X\hat\gamma$. Adjusting on *pre-treatment* covariates is **never worse**
+than difference-in-means, even under misspecification:
+
+$$
+V_{\text{IREG}} = V_{\text{DM}} - \lVert \beta^{*}_{(0)}+\beta^{*}_{(1)} \rVert_A^2 \ \le\ V_{\text{DM}}.
+$$
+
+This is the CUPED variance-reduction principle (covered in the Metrics chapter): no bias, strictly tighter
+intervals when $X$ is predictive.
+
+::: {.callout-warning appearance="simple"}
+**The linearity tax.** Plain "control for $X$" via $Y_i = \alpha+\tau W_i+\beta'X_i+\varepsilon_i$ is *not*
+justified by unconfoundedness alone — it silently assumes **(i)** constant effects and **(ii)** a linear
+baseline. With discrete $X$, OLS and IPW are *both* weighted averages of stratum effects $\tau_x$, but with
+different weights:
+
+$$
+\tau^{\text{IPW}}=\frac{\sum_x \tau_x\, e(x)\,P(X{=}x)}{\sum_x e(x)\,P(X{=}x)},
+\qquad
+\tau^{\text{OLS}}=\frac{\sum_x \tau_x\, \sigma^2_{W|x}\,P(X{=}x)}{\sum_x \sigma^2_{W|x}\,P(X{=}x)},
+\quad \sigma^2_{W|x}=e(x)(1-e(x)).
+$$
+
+OLS over-weights the 50/50-split strata (where $\sigma^2_{W|x}$ peaks) and equals the ATE *only* if effects
+are constant. IPW targets the ATE. This is the gap the doubly-robust machinery closes.
+:::
+
+### Inverse-propensity weighting {#sec-ipw}
+
+$$
+\hat\tau_{\text{IPW}}=\frac1n\sum_i\left[\frac{W_iY_i}{\hat e(X_i)}-\frac{(1-W_i)Y_i}{1-\hat e(X_i)}\right].
+$$
+
+Oracle IPW (true $e$) is unbiased but **inefficient** — it ignores the outcome model entirely.
+
+### Augmented IPW = doubly robust {#sec-aipw}
+
+The workhorse combines a regression imputation with an IPW correction on its residuals:
+
+$$
+\hat\tau_{\text{AIPW}}=\frac1n\sum_i\Big[
+\underbrace{\hat\mu_{(1)}(X_i)-\hat\mu_{(0)}(X_i)}_{\text{regression}}
++\underbrace{W_i\tfrac{Y_i-\hat\mu_{(1)}(X_i)}{\hat e(X_i)}
+-(1-W_i)\tfrac{Y_i-\hat\mu_{(0)}(X_i)}{1-\hat e(X_i)}}_{\text{IPW on residuals}}\Big].
+$$
+
+It is **doubly robust**: consistent if *either* $\hat\mu$ *or* $\hat e$ is right. With **cross-fitting**
+(the DML recipe — fit nuisances on held-out folds, evaluate on the rest), the product-of-errors bias is
+removed and, provided $\alpha_\mu+\alpha_e \ge \tfrac12$ (e.g. both nuisances at $n^{-1/4}$),
+
+$$
+\sqrt n\,(\hat\tau_{\text{AIPW}}-\tau)\ \Rightarrow\ N(0, V^{*}),
+\qquad
+V^{*}=\operatorname{Var}[\tau(X)]+\mathbb{E}\!\left[\tfrac{\sigma^2_{(1)}(X)}{e(X)}\right]
++\mathbb{E}\!\left[\tfrac{\sigma^2_{(0)}(X)}{1-e(X)}\right].
+$$
+
+$V^{*}$ is the **semiparametric efficiency bound** — no regular estimator does better. The interval uses the
+influence-function variance $\hat V = \tfrac{1}{n-1}\sum_i(\hat\Gamma_i-\hat\tau)^2$ from the per-unit scores
+$\hat\Gamma_i$.
+
+::: {.callout-note appearance="simple"}
+**Lyra's shortcut (Cor 3.3).** Because the simulator *knows* $e(x)$, AIPW attains the efficiency bound
+$V^{*}$ using **any** consistent outcome model — *no rate condition required*. Recovery tests lean on this:
+the estimator should hit nominal coverage even with a crude $\hat\mu$.
+:::
+
+## Certification {#sec-certify}
+
+Run all four through [the harness](harness.qmd) on `DGPLevel1` with a confounding knob and a nonlinear
+baseline (`ate=2.0`, $R$ replications). The verdict is unambiguous and *measured*:
+
+| estimator | confounded · nonlinear | reads |
+|---|---|---|
+| diff-in-means | bias $\approx +1.8$, coverage $\approx 0$ | [uncertified]{.bias} |
+| OLS (linear) | bias $\approx +1.3$, coverage $\approx 0$ | [uncertified]{.bias} |
+| **AIPW** | bias $\approx 0.04$, coverage $\approx 0.93$ | [**certified**]{.cert} |
+| **DML** (`econml`) | bias $\approx -0.02$, coverage $\approx 0.90$ | [**certified**]{.cert} |
+
+Selection on *observables* is solvable: the doubly-robust pair recovers the planted $\tau$ with nominal
+coverage while the naive and linear estimators are confidently wrong. The harder case — a *hidden*
+confounder that breaks even AIPW, and the sensitivity analysis that quantifies it — is the subject of the
+**Observational** chapter.

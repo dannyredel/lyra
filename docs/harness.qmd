@@ -1,0 +1,130 @@
+---
+title: "The recovery harness & the contracts"
+subtitle: "The Monte-Carlo loop that certifies any estimator against any known-truth world."
+---
+
+::: {.lead}
+Every claim in this guide reduces to one engine: plant a known effect, fit an estimator, and check it
+recovers the truth with correct coverage — repeated enough times to be a measurement, not an anecdote. This
+chapter builds that engine and the two interfaces that make it universal.
+:::
+
+## Two contracts {#sec-contracts}
+
+The whole platform rests on a deliberate symmetry. An **estimator** is anything that *guesses* the effect
+from observable data; a **DGP** is anything that *knows* the truth it generated. Encode each as a small
+protocol and the certification loop can be written **once**, for all methods, present and future.
+
+```python
+@runtime_checkable
+class Estimator(Protocol):
+    name: str
+    estimand: str                # "ATE", "CATE", …
+    requires: set[str]           # e.g. {"covariates"}
+    def estimate(self, data, config=None) -> EstimatorResult: ...
+
+@runtime_checkable
+class DGP(Protocol):
+    name: str
+    def sample(self, n: int, seed: int): ...      # observable data only
+    def ground_truth(self) -> GroundTruth: ...     # the oracle the estimator can't see
+```
+
+`sample` returns only what an analyst would observe; `ground_truth` returns what only the simulator knows —
+the true ATE, the CATE surface $\tau(x)$, per-period effects. That split *is* the superpower: the estimator
+never sees `ground_truth`, but the harness does.
+
+## The estimand {#sec-estimand}
+
+Throughout, the target is the **average treatment effect** under the potential-outcomes model. Each unit has
+outcomes $Y_i(1), Y_i(0)$ under treatment and control; we observe only $Y_i = Y_i(W_i)$ for assigned
+$W_i\in\{0,1\}$. The estimand is
+
+$$
+\tau = \mathbb{E}\!\left[\,Y_i(1) - Y_i(0)\,\right].
+$$
+
+Because the DGP *constructs* $Y_i(1)$ and $Y_i(0)$, $\tau$ is known exactly — the quantity an estimate is
+graded against. (Heterogeneity, $\tau(x)=\mathbb{E}[Y_i(1)-Y_i(0)\mid X_i=x]$, is the subject of the CATE
+chapter.)
+
+## The loop {#sec-harness}
+
+The harness draws $R$ independent worlds from a DGP, runs the estimator on each, and aggregates how the
+estimates and intervals behave *relative to the planted truth*:
+
+```python
+def harness(estimator, dgp, R=200, n=2000):
+    truth = dgp.ground_truth().ate
+    pts, cover, reject = [], [], []
+    for r in range(R):
+        res = estimator.estimate(dgp.sample(n, seed=1000 + r))
+        lo, hi = res.ci
+        pts.append(res.point)
+        cover.append(lo <= truth <= hi)          # CI covers the known τ?
+        reject.append(not (lo <= 0 <= hi))        # CI excludes 0?
+    ...
+```
+
+Over the $R$ replications it reports four numbers:
+
+$$
+\widehat{\text{bias}} = \bar{\hat\tau} - \tau, \qquad
+\text{RMSE} = \sqrt{\tfrac1R\textstyle\sum_r (\hat\tau_r - \tau)^2},
+$$
+$$
+\widehat{\text{coverage}} = \tfrac1R\textstyle\sum_r \mathbb{1}\{\tau \in \widehat{\mathrm{CI}}_r\},
+\qquad
+\widehat{\text{reject}} = \tfrac1R\textstyle\sum_r \mathbb{1}\{0 \notin \widehat{\mathrm{CI}}_r\}.
+$$
+
+The reject-rate does double duty: at $\tau = 0$ it is the **type-I error** (should be $\le\alpha$); at
+$\tau \neq 0$ it is **power**.
+
+## Coverage *is* certification {#sec-certify}
+
+The decisive check is **coverage**. A correct $1-\alpha$ interval, by construction, traps the truth a
+$1-\alpha$ fraction of the time:
+
+$$
+\Pr\!\big(\tau \in \widehat{\mathrm{CI}}_{1-\alpha}\big) = 1-\alpha .
+$$
+
+On real data this is uncheckable — $\tau$ is hidden. In Lyra it is the **gate**: an estimator whose
+empirical coverage lands at its nominal rate (and whose bias is negligible) on the world that generated the
+data is [certified]{.cert}; one whose intervals systematically miss is [uncertified]{.bias}, and the size
+of the miss is reported. This is the green badge on every scorecard in the demo.
+
+## Worked example — "OLS biases, AIPW survives" {#sec-grid}
+
+The cleanest demonstration uses a covariate world (`DGPLevel1`) with a **confounding knob** — treatment
+propensity $e(X)=\sigma(\gamma\, c(X))$ depends on the same $X$ that drives a possibly **nonlinear**
+baseline $b(X)$. Three estimators meet it:
+
+- **diff-in-means** — unbiased under randomization, [biased]{.bias} the moment $e(X)$ tilts;
+- **OLS adjustment** — fixes *linear* confounding, [biased]{.bias} when $b(X)$ is nonlinear;
+- **AIPW** — the doubly-robust, cross-fitted estimator that [survives]{.cert} nonlinear confounding.
+
+Running the harness across assumption-violation scenarios produces a tidy verdict table:
+
+| scenario | diff | OLS | AIPW |
+|---|---|---|---|
+| randomized | ✓ covers | ✓ covers | ✓ covers |
+| confounded · linear baseline | ✗ biased | ✓ covers | ✓ covers |
+| confounded · **nonlinear** baseline | ✗ biased | ✗ biased | **✓ covers** |
+
+Same data, same loop — only the estimator changes, and only one survives the hardest cell. That is the
+robustness grid the platform runs behind every certified badge, and the template every later chapter fills
+in for its own method.
+
+## What the harness also powers {#sec-also}
+
+The same loop, sliced differently, yields the rest of the platform's guarantees:
+
+- a **power curve** — sweep $\tau$ and read the reject-rate, with type-I pinned at $\tau=0$ (Power chapter);
+- a **coverage caterpillar** — the per-replication intervals, ~$1-\alpha$ of them trapping the dashed truth
+  (the demo's *detailed analytics* view);
+- a **sampling distribution** — $\{\hat\tau_r\}$ centred on $\tau$, the visual proof of unbiasedness.
+
+With the engine in place, the rest of the guide is methods: each names its estimand, writes its estimator
+and variance, and shows the recovery numbers that certify it.

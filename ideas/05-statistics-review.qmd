@@ -1,0 +1,102 @@
+---
+title: "Statistics Review (skip if fluent)"
+---
+
+::: {.callout-note title="The platform problem"}
+Before you trust any lift on a scorecard, you need the machinery that turns
+noisy data into a defensible claim: how much an estimate wobbles, how to express
+that uncertainty, and how big a sample you need to see an effect you care about.
+This chapter is a fast review of that machinery, framed for experimentation.
+Skip it if it's second nature — every later chapter assumes it.
+:::
+
+## Brute-force independence with randomization
+
+Why randomization is the cheat code: it makes treatment independent of
+*everything* — observed and unobserved — so a simple difference in means
+identifies the average effect. This is the foundation the whole core readout
+rests on (and what we lose, and must reconstruct, in Part X).
+
+## The standard error & the most dangerous equation
+
+The estimate is a random variable; its standard error is how much it would
+wobble across repeated experiments. For a mean,
+$$\text{SE}(\bar X) = \frac{\sigma}{\sqrt{n}}.$$
+Wainer (after de Moivre) calls this *the most dangerous equation*: ignoring it —
+forgetting that small samples produce wild estimates — has misled entire fields.
+Two consequences drive the rest of the book: **variance is the enemy** (motivates
+variance reduction — CUPED/CUPAC, Part II) and **$n$ must be adequate** (motivates
+power, below).
+
+## Confidence intervals
+
+A 95% confidence interval is a *procedure* statement: across many repetitions,
+95% of the intervals it produces contain the true value. It is **not** a
+probability statement about this particular interval — a subtlety we take up
+head-on in the next chapter. On the scorecard, the operational rule is: an
+interval excluding zero ↔ significant at the matching level (Part XIV, §scorecard).
+
+## Hypothesis testing
+
+- **Null hypothesis** $H_0: \theta = 0$ vs alternative $H_1: \theta \neq 0$.
+- **Test statistic** — standardized distance from the null (e.g. $t = \hat\theta / \widehat{\text{SE}}$).
+- **p-value** — probability, *under $H_0$*, of a statistic at least this extreme. Not the probability the null is true.
+- **Type I / Type II error** — false positive ($\alpha$) and false negative ($\beta$).
+
+## Power and sample size
+
+**Power** is $1 - \beta$: the probability of correctly rejecting $H_0$ when a real
+effect exists. It is driven by four levers — significance $\alpha$, true effect
+$\theta$, noise $\sigma$, and sample size $n$. The **scaled effect size**
+$\text{ES} = \theta/\sigma$ (Cohen's $d$; 0.2 / 0.5 / 0.8 ≈ small / medium / large)
+bundles two of them.
+
+For a two-sample comparison with equal allocation and known variance, the total
+sample size for level $\alpha$ and power $1-\beta$ is
+$$n = \frac{4\sigma^2\,(z_{1-\alpha/2} + z_{1-\beta})^2}{\theta^2}.$$
+Unequal allocation ($r = n_1/n_2$) and proportion outcomes have their own closed
+forms (see Taback, *Design and Analysis of Experiments using R*, ch. 4).
+
+```{python}
+# Closed-form two-sample size for a target power (Python).
+# from statsmodels.stats.power import TTestIndPower
+# n_per_group = TTestIndPower().solve_power(effect_size=theta/sigma,
+#                                           alpha=0.05, power=0.8)
+```
+
+### Power two ways: formula vs simulation
+
+When the test has a clean sampling distribution, the formula above is exact. When
+it doesn't — ratio metrics, clustered randomization, switchback — there is no
+closed form, and the honest route is **simulation**:
+
+1. Generate data under $H_1$ with the design's sample sizes and a chosen true effect.
+2. Run the actual estimator and compute the p-value (or CI).
+3. Repeat $N$ times; power is the fraction of rejections.
+
+This is exactly the Monte Carlo harness Vega runs (Appendix A), and it is why the
+production power/MDE engine lives in Part II rather than here: the *concept* is in
+this review; the *platform* version reuses the same loop to size designs the
+formula can't.
+
+## Validate against ground truth (Vega)
+
+```{python}
+# Confirm the closed-form size delivers the promised power:
+# set true effect θ in a Vega DGP, draw N studies at the computed n,
+# and check the rejection rate ≈ 0.8. Formula and simulation should agree
+# wherever the formula is valid — and only simulation survives where it isn't.
+```
+
+## Key ideas
+
+- Randomization buys identification; everything else is quantifying uncertainty.
+- $\text{SE} = \sigma/\sqrt n$ — respect it; it motivates both variance reduction and adequate sampling.
+- A confidence interval is about the *procedure*, not this interval (next chapter).
+- Power has four levers; effect size scales two of them.
+- When no formula fits the design, simulate — that loop is the platform's power engine.
+
+## Further reading
+
+*Anchors: @kohavi2020trustworthy (ch. on power), Taback ch. 4, Wainer on the most
+dangerous equation. Pull more from the paper-library; cite with [@key].*

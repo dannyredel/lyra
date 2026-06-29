@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_events
+    description: >
+      Typed view over the append-only parquet event log. In `real` mode (default) it DROPS
+      ground_truth_tau (EVENT_LOG §4) so nothing downstream of metrics can read the simulator's
+      hidden truth.
+    columns:
+      - name: event_id
+        description: Unique event id.
+        data_tests: [not_null, unique]
+      - name: event_type
+        description: One of the six event types (EVENT_LOG §2).
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [arrival, assignment, impression, conversion, budget_decrement, churn]
+      - name: day
+        data_tests: [not_null]

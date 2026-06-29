@@ -1,0 +1,30 @@
+name: vega_metrics
+version: "0.1.0"
+config-version: 2
+
+# The metrics layer is dbt/SQL over the event log (NOT pandas transforms) — it is a deliverable.
+# Designed for BigQuery; runs locally on DuckDB. Profile selected in profiles.yml.
+profile: vega
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# `mode` is passed at run time (`dbt run --vars '{mode: real}'`). In `real` mode the staging
+# model DROPS ground_truth_tau so estimators can never see it (EVENT_LOG §4).
+vars:
+  mode: real
+  event_log_dir: "../events"
+
+models:
+  vega_metrics:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

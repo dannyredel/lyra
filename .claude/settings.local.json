@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:github.com)",
+      "Bash(python -m pip install -e \".[papers]\")",
+      "Bash(python scripts/pdf_to_md.py \"paper-library/pdfs/00-foundational/Causal Inference - Stefan Wager \\(Nov 2025\\).pdf\")",
+      "Bash(python -c ' *)",
+      "WebFetch(domain:grf-labs.github.io)",
+      "WebFetch(domain:causalml.readthedocs.io)",
+      "Bash(set -e)",
+      "Bash(mv *nzel*2019*metalearner*.pdf \"pdfs/11-hte-metalearners-forests/Künzel et al 2019.pdf\")",
+      "WebFetch(domain:confidence.spotify.com)",
+      "Bash(awk '{$1=int\\($1/1024\\)+1; print}')",
+      "Bash(sort -k2)",
+      "Bash(grep -viE \"^\\(0[1-9]|1[0-2]\\)_|_old|ROADMAP|\\\\.ipynb$|__pycache__|nbtools\")",
+      "Bash(PYTHONIOENCODING=utf-8 python -W ignore -c ' *)",
+      "Bash(python -c \"import jupytext; print\\('jupytext', jupytext.__version__\\)\")",
+      "Bash(awk '/^# %% \\\\[markdown\\\\]/{c++} c>=1 && c<=2' ch1_streams_dgp.py)"
+    ]
+  }
+}

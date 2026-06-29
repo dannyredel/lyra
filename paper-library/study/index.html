@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vega study guide — Causal Inference (Wager), Tier 1</title>
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['\\(','\\)']], displayMath: [['$$','$$']],
+      // Daniel's Notion colour macros — \color[rgb]{...} (base model; [HTML] is unsupported in MathJax)
+      macros: {
+        blue:   ['\\color[rgb]{0.431,0.659,0.996}{#1}', 1],
+        green:  ['\\color[rgb]{0.247,0.714,0.545}{#1}', 1],
+        pink:   ['\\color[rgb]{0.914,0.329,0.541}{#1}', 1],
+        purple: ['\\color[rgb]{0.616,0.482,1.000}{#1}', 1],
+        orange: ['\\color[rgb]{0.878,0.549,0.310}{#1}', 1],
+        gray:   ['\\color[rgb]{0.588,0.627,0.698}{#1}', 1]
+      }
+    },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161922; --ink:#e7e9ee; --muted:#9aa3b2; --line:#262b36;
+    --accent:#6ea8fe; --accent2:#9d7bff;
+    --intuition:#3fb68b; --pitfall:#e0795b; --vega:#c79a3a; --proof:#7c8499;
+    --maxw:830px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;display:grid;grid-template-columns:272px 1fr}
+  aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);
+    background:var(--panel);padding:22px 16px}
+  .brand{font-weight:700;letter-spacing:.4px;font-size:12px;color:var(--muted);text-transform:uppercase}
+  aside h1{font-size:15.5px;margin:6px 0 4px;line-height:1.3}
+  aside .meta{font-size:11.5px;color:var(--muted);margin-bottom:16px}
+  .tier{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:14px 0 6px}
+  .chap{display:flex;gap:9px;align-items:flex-start;color:var(--ink);text-decoration:none;font-size:13.5px;
+    padding:8px 9px;border-radius:8px;opacity:.82;cursor:pointer}
+  .chap:hover{background:#1d2230;opacity:1}
+  .chap.active{background:#1d2738;opacity:1}
+  .chap.active .cn{color:var(--accent)}
+  .chap .cn{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600;min-width:16px}
+  .chap.active{border-left:2px solid var(--accent);padding-left:7px}
+  nav.toc{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  nav.toc a{display:block;font-size:12.5px;padding:3px 9px;color:var(--muted);text-decoration:none;border-radius:6px}
+  nav.toc a:hover{color:var(--ink)} nav.toc a.on{color:var(--accent)}
+  /* main */
+  main{max-width:var(--maxw);margin:0 auto;padding:46px 34px 130px}
+  .chapter{display:none} .chapter.show{display:block;animation:f .25s ease}
+  @keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .crumb{color:var(--muted);font-size:12.5px;margin-bottom:6px}
+  h2.title{font-size:29px;line-height:1.18;margin:0 0 4px;letter-spacing:-.4px}
+  .subtitle{color:var(--muted);margin:0 0 22px;font-size:15px}
+  .lead{font-size:17px;color:#cfd4de;border-left:3px solid var(--accent2);padding-left:14px;margin:18px 0 6px}
+  h3{margin:40px 0 10px;font-size:20px;letter-spacing:-.2px;scroll-margin-top:20px}
+  h3 .num{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:9px}
+  p{margin:12px 0} ul{margin:12px 0}
+  code{background:#1d2230;padding:1px 6px;border-radius:5px;font-size:13px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;color:#cdd6f4}
+  .box{border-left:3px solid var(--line);background:var(--panel);border-radius:0 10px 10px 0;padding:13px 17px;margin:18px 0}
+  .box .tag{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;display:block;margin-bottom:3px}
+  .box.intuition{border-color:var(--intuition)} .box.intuition .tag{color:var(--intuition)}
+  .box.pitfall{border-color:var(--pitfall)} .box.pitfall .tag{color:var(--pitfall)}
+  .box.vega{border-color:var(--vega);background:#1a1813} .box.vega .tag{color:var(--vega)}
+  details.proof{border-left:3px solid var(--proof);background:#13161d;border-radius:0 10px 10px 0;padding:8px 17px;margin:18px 0}
+  details.proof summary{cursor:pointer;color:var(--proof);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+  details.proof[open] summary{margin-bottom:6px}
+  .eq{background:#12151c;border:1px solid var(--line);border-radius:10px;padding:2px 16px;margin:15px 0;overflow-x:auto}
+  .eq.key{border-color:#2f3d57;box-shadow:0 0 0 1px #1f2a3d inset,0 8px 30px -18px var(--accent)}
+  .keylabel{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;color:var(--accent);text-transform:uppercase;margin:14px 0 -6px}
+  figure{margin:24px 0} figcaption{color:var(--muted);font-size:12.5px;text-align:center;margin-top:8px}
+  .node rect{fill:#1a1f2b;stroke:#33405a} .node text{fill:#e7e9ee;font-size:12.5px;font-family:inherit}
+  .node .sub{fill:#9aa3b2;font-size:10.5px} .hl rect{stroke:var(--accent);fill:#152033}
+  .edge{stroke:#46506a;stroke-width:1.6;fill:none;marker-end:url(#arr)} .edge-l{fill:#9aa3b2;font-size:10.5px}
+  table.tt{border-collapse:collapse;width:100%;margin:16px 0;font-size:13.5px}
+  table.tt th,table.tt td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  table.tt th{background:#1a1f2b;color:var(--muted);font-weight:600}
+  footer{margin-top:46px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:12.5px}
+  footer a{color:var(--accent);text-decoration:none}
+  @media(max-width:880px){body{grid-template-columns:1fr}aside{display:none}main{padding:26px 18px 90px}}
+</style>
+</head>
+<body>
+<aside>
+  <div class="brand">Vega · study guide</div>
+  <h1>Causal Inference — Wager</h1>
+  <div class="meta">Tier 1 · the spine · math via MathJax</div>
+  <div id="chaplist">
+    <div class="tier">Tier 1 · the spine</div>
+    <a class="chap" data-target="ch-dr"><span class="cn">3</span><span>Doubly Robust &amp; DML</span></a>
+    <a class="chap" data-target="ch-hte"><span class="cn">4</span><span>Heterogeneous Effects<br/><span style="color:var(--muted);font-size:11px">+ metalearners &amp; causal forests</span></span></a>
+    <a class="chap" data-target="ch-policy"><span class="cn">5</span><span>Policy Learning &amp; OPE</span></a>
+    <a class="chap" data-target="ch-int"><span class="cn">11·12</span><span>Interference <span style="color:var(--vega)">(the thesis)</span></span></a>
+    <div class="tier" style="margin-top:16px">Tier 2 · foundations</div>
+    <a class="chap" data-target="ch-rct"><span class="cn">1·2</span><span>RCT &amp; IPW</span></a>
+    <a class="chap" data-target="ch-iv"><span class="cn">10</span><span>IV &amp; LATE</span></a>
+    <a class="chap" data-target="ch-did"><span class="cn">13</span><span>DiD &amp; event study</span></a>
+  </div>
+  <nav class="toc" id="toc"></nav>
+</aside>
+
+<main>
+<!-- ============================ CH.3 DR / DML ============================ -->
+<section class="chapter" id="ch-dr">
+  <div class="crumb">Wager · ch.3</div>
+  <h2 class="title">Doubly Robust Methods (DML)</h2>
+  <p class="subtitle">The conceptual spine — why AIPW + cross-fitting is the estimator the whole inference library is built around.</p>
+  <p class="lead">AIPW combines a regression guess and an IPW reweighting so an error in <em>either</em> one is forgiven — and with cross-fitting it reaches the best variance any estimator can achieve, using arbitrary ML nuisances.</p>
+
+  <h3 id="dr-setup"><span class="num">1</span>The setting</h3>
+  <p>Observe \((X_i,W_i,Y_i)\), want \(\tau=E[Y_i(1)-Y_i(0)]\). Three assumptions: <strong>SUTVA</strong> \(Y_i=Y_i(W_i)\);
+  <strong>unconfoundedness</strong> \(\{Y_i(0),Y_i(1)\}\perp\!\!\!\perp W_i\mid X_i\); <strong>strong overlap</strong> \(\eta\le e(x)\le 1-\eta\),
+  with propensity \(e(x)=P(W{=}1\mid X{=}x)\) and response surfaces \(\mu_{(w)}(x)=E[Y\mid X{=}x,W{=}w]\).</p>
+
+  <h3 id="dr-two"><span class="num">2</span>Two views of the same ATE</h3>
+  <span class="keylabel">View A — IPW (model the propensity)</span>
+  <div class="eq">$$\hat\tau_{IPW}=\frac1n\sum_i\Big[\frac{W_iY_i}{e(X_i)}-\frac{(1-W_i)Y_i}{1-e(X_i)}\Big]$$</div>
+  <span class="keylabel">View B — regression (model the outcome)</span>
+  <div class="eq">$$\hat\tau_{REG}=\frac1n\sum_i\big(\hat\mu_{(1)}(X_i)-\hat\mu_{(0)}(X_i)\big)$$</div>
+  <div class="box intuition"><span class="tag">💡 Intuition</span> IPW reweights the data we have to look randomized; regression imputes the data we don't have. Each leans on a different model — so use both.</div>
+
+  <figure>
+    <svg viewBox="0 0 720 250" width="100%" role="img" aria-label="Estimator family tree">
+      <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#46506a"/></marker></defs>
+      <g class="node"><rect x="20" y="100" width="150" height="48" rx="9"/><text x="95" y="122" text-anchor="middle">Difference-in-means</text><text x="95" y="138" text-anchor="middle" class="sub">RCT baseline (ch.1)</text></g>
+      <g class="node"><rect x="250" y="40" width="150" height="48" rx="9"/><text x="325" y="62" text-anchor="middle">Regression adj.</text><text x="325" y="78" text-anchor="middle" class="sub">model μ(x)</text></g>
+      <g class="node"><rect x="250" y="160" width="150" height="48" rx="9"/><text x="325" y="182" text-anchor="middle">IPW</text><text x="325" y="198" text-anchor="middle" class="sub">model e(x)</text></g>
+      <g class="node"><rect x="470" y="100" width="120" height="48" rx="9"/><text x="530" y="122" text-anchor="middle">AIPW</text><text x="530" y="138" text-anchor="middle" class="sub">combine μ + e</text></g>
+      <g class="node hl"><rect x="630" y="100" width="80" height="48" rx="9"/><text x="670" y="120" text-anchor="middle">DML</text><text x="670" y="136" text-anchor="middle" class="sub">+ cross-fit</text></g>
+      <path class="edge" d="M170 116 C210 110 215 70 250 64"/><path class="edge" d="M170 132 C210 138 215 180 250 184"/>
+      <path class="edge" d="M400 64 C440 70 445 105 470 116"/><path class="edge" d="M400 184 C440 178 445 140 470 132"/>
+      <path class="edge" d="M590 124 L630 124"/><text class="edge-l" x="186" y="86">+ covariates</text>
+    </svg>
+    <figcaption>Add covariates two ways, fuse them (AIPW), make the nuisances honest (cross-fitting → DML).</figcaption>
+  </figure>
+
+  <h3 id="dr-aipw"><span class="num">3</span>AIPW — combine them</h3>
+  <p>Start from the regression guess; use IPW <em>on the residuals</em> to mop up what it got wrong:</p>
+  <div class="eq key">$$\hat\tau_{AIPW}=\frac1n\sum_i\Big[\underbrace{\green{\hat\mu_{(1)}(X_i)}-\green{\hat\mu_{(0)}(X_i)}}_{\text{outcome model}}+\underbrace{W_i\tfrac{Y_i-\green{\hat\mu_{(1)}(X_i)}}{\pink{e(X_i)}}-(1-W_i)\tfrac{Y_i-\green{\hat\mu_{(0)}(X_i)}}{\pink{1-e(X_i)}}}_{\text{IPW correction}}\Big]$$</div>
+  <p style="font-size:12.5px;color:var(--muted);margin:-2px 0 12px"><span style="color:#3FB68B">●</span> outcome model \(\hat\mu\) &nbsp; <span style="color:#E9548A">●</span> propensity \(e\) (the two nuisances)</p>
+  <p>The per-unit summand is the <strong>AIPW / doubly-robust / influence-function score</strong> \(\Gamma_i\) — the same object that returns in policy &amp; off-policy evaluation (ch.5).</p>
+
+  <h3 id="dr-weak"><span class="num">4</span>Weak double robustness</h3>
+  <p>Consistent if <strong>either</strong> \(\hat\mu\) <strong>or</strong> \(\hat e\) is right.</p>
+  <div class="box intuition"><span class="tag">💡 Why</span> If \(\hat\mu\) is right, residuals are mean-zero so the (wrong) weights multiply noise and wash out. If \(\hat e\) is right, IPW is already unbiased and the (wrong) regression terms cancel. Two nets, need one.</div>
+  <div class="box pitfall"><span class="tag">⚠️ Don't oversell</span> Weak DR only buys consistency. With flexible ML both nuisances are consistent anyway — so "either/or" adds nothing. The result that matters is the strong one.</div>
+
+  <h3 id="dr-strong"><span class="num">5</span>Strong DR &amp; cross-fitting</h3>
+  <p>AIPW's bias is the <em>product</em> of the nuisance rates, \(n^{-(\alpha_\mu+\alpha_e)}\). So as long as</p>
+  <div class="eq key">$$\alpha_\mu+\alpha_e\ge\tfrac12\quad(\text{e.g. both }n^{-1/4})\ \Longrightarrow\ \sqrt n(\hat\tau_{AIPW}-\tau)\Rightarrow N(0,V^*)$$</div>
+  <div class="box intuition"><span class="tag">💡 The magic</span> Regression alone has bias \(n^{-\alpha_\mu}\), IPW alone \(n^{-\alpha_e}\); AIPW gets their product — far smaller. So slow ML (forests, boosting, nets), each only beating \(n^{-1/4}\), still gives \(\sqrt n\)-valid inference on \(\tau\).</div>
+  <p><strong>Cross-fitting:</strong> fit \(\hat\mu,\hat e\) on the <em>other</em> \(K{-}1\) folds, evaluate residuals out-of-fold → "honest" residuals overfitting can't shrink. AIPW + cross-fitting = <strong>double/debiased ML (DML)</strong>, Chernozhukov et al. 2018.</p>
+  <details class="proof"><summary>Why orthogonality is the real reason</summary>The AIPW score is Neyman-orthogonal: \(\partial_\eta E[\psi]=0\) at the truth, so first-order nuisance errors don't move the estimate; cross-fitting kills the second-order own-fold bias. Together → the \(\alpha_\mu+\alpha_e\ge\frac12\) condition. Full: <code>notation/dml.md</code>.</details>
+
+  <h3 id="dr-eff"><span class="num">6</span>Efficiency &amp; CIs</h3>
+  <p>\(V^*\) is the <strong>semiparametric efficiency bound</strong> — no estimator under these assumptions beats it:</p>
+  <div class="eq key">$$V^*=\mathrm{Var}[\tau(X_i)]+E\Big[\tfrac{\sigma^2_{(1)}(X_i)}{e(X_i)}\Big]+E\Big[\tfrac{\sigma^2_{(0)}(X_i)}{1-e(X_i)}\Big]$$</div>
+  <div class="eq">$$\hat V_{AIPW}=\tfrac1{n-1}\sum_i(\hat\Gamma_i-\hat\tau)^2,\qquad \hat\tau_{AIPW}\pm\Phi^{-1}(1-\tfrac\alpha2)\sqrt{\hat V_{AIPW}/n}$$</div>
+
+  <h3 id="dr-vega"><span class="num">7</span>Vega's shortcut &amp; what it feeds</h3>
+  <div class="box vega"><span class="tag">🎯 Vega hook — Corollary 3.3</span> When \(e(x)\) is <strong>known</strong>, AIPW hits \(V^*\) with <em>any</em> consistent \(\hat\mu\) — <strong>no rate condition</strong>. Vega's engine sets \(e(x)\), so recovery tests can assert efficient, \(\sqrt n\)-valid coverage cleanly. The single most useful fact here.</div>
+  <table class="tt"><tr><th>Concept</th><th>Vega use</th></tr>
+    <tr><td>AIPW score \(\Gamma_i\)</td><td><code>incrementality.py</code> (vs holdout), <code>ope.py</code> (DR score)</td></tr>
+    <tr><td>Cross-fit orthogonal score</td><td>backbone of all corrected estimators · <code>notation/dml.md</code></td></tr>
+    <tr><td>Linear special case</td><td><code>cuped.py</code> — variance reduction, never worse than naive</td></tr>
+    <tr><td>Efficiency bound \(V^*\)</td><td>benchmark variance for recovery tests</td></tr></table>
+
+  <h3 id="dr-algo"><span class="num">8</span>The DML algorithm, step by step</h3>
+  <p>From your notes — the partially-linear model with target \(\blue{\alpha}\), controls \(x\), treatment \(d\), outcome \(y\) (here \(d=W,\ x=X\)):</p>
+  <div class="eq">$$y_i=\blue{\alpha_0}\, d_i+\green{g_0(x_i)}+\varepsilon_i,\qquad d_i=\pink{m_0(x_i)}+u_i$$</div>
+  <p style="font-size:12.5px;color:var(--muted);margin:-2px 0 16px">
+    <span style="color:#6EA8FE">●</span> target \(\alpha\) &nbsp;
+    <span style="color:#3FB68B">●</span> outcome model \(g,\beta,\hat\varepsilon\) &nbsp;
+    <span style="color:#E9548A">●</span> treatment model \(m,\gamma,\hat u\) &nbsp;
+    <span style="color:#9D7BFF">●</span> \(y\)-residual \(\hat v\) &nbsp;
+    <span style="color:#E08C4F">●</span> raw \(d\) &nbsp;
+    <span style="color:#96A0B2">●</span> prelim \(\tilde\alpha\)</p>
+
+  <p><strong>(a) Partialling-out (Robinson) score</strong> — \(k=2\) folds \(S_1,S_2\):</p>
+  <ul>
+    <li><strong>Step 0</strong> — partition into folds \(S_1,S_2\) (size \(n/k\)).</li>
+    <li><strong>Step 1</strong> — on \(S_1\) regress \(y\) on \(x\) (Lasso/Post-Lasso); residualize out-of-fold on \(S_2\): $$\purple{\hat v_{i2}}=y_{i2}-x_{i2}'\purple{\hat\theta_1}$$</li>
+    <li><strong>Step 2</strong> — on \(S_1\) regress \(d\) on \(x\); residualize: $$\pink{\hat u_{i2}}=d_{i2}-x_{i2}'\pink{\hat\gamma_1}$$</li>
+    <li><strong>Step 3</strong> — regress \(\hat v\) on \(\hat u\): $$\blue{\hat\alpha_2}=\Big[\tfrac1n\textstyle\sum_i \pink{\hat u_{i2}^2}\Big]^{-1}\Big[\tfrac1n\textstyle\sum_i \pink{\hat u_{i2}}\,\purple{\hat v_{i2}}\Big]$$</li>
+    <li><strong>Steps 4–6</strong> — swap folds (fit on \(S_2\), residualize on \(S_1\)) → \(\blue{\hat\alpha_1}\).</li>
+    <li><strong>Step 7</strong> — aggregate (DML1 / DML2 below).</li>
+  </ul>
+
+  <div class="box intuition"><span class="tag">💡 (b) IV-type score — the variation</span> Same idea, two steps differ: <strong>Step 1</strong> regresses \(y\) on \(x\) <em>without penalizing</em> \(d\), giving \(\green{\hat g}\) and \(\green{\hat\varepsilon_{i2}}=y_{i2}-\gray{\tilde\alpha}\,d_{i2}-x_{i2}'\green{\hat\beta_1}\); <strong>Step 3</strong> regresses \(\hat\varepsilon\) on \(d\) using \(\hat u\) as an <em>instrument</em>:
+  $$\blue{\hat\alpha_2}=\Big[\tfrac1n\textstyle\sum_i \pink{\hat u_{i2}}\,\orange{d_{i2}}\Big]^{-1}\Big[\tfrac1n\textstyle\sum_i \pink{\hat u_{i2}}\,\green{\hat\varepsilon_{i2}}\Big]$$
+  <code>doubleml</code> exposes these as <code>score="partialling out"</code> vs <code>"IV-type"</code>; nuisances can be Lasso, random forest, etc.
+  <details class="proof"><summary>See it as 2SLS (your notes, verbatim)</summary>
+  $$\text{1st stage: }\orange{d_{i2}}=\phi_{02}\,\pink{\hat u_{i2}}+e_{i2}\qquad
+  \text{2nd stage: }\underbrace{[\,y_{i2}-\gray{\tilde\alpha}\, d_{i2}-x_{i2}'\green{\hat\beta_1}\,]}_{\green{\hat\varepsilon_{i2}}}=\blue{\hat\alpha_2}\,\orange{\hat d_{i2}}+e_{i2}$$
+  i.e. the IV-type score is 2SLS with the treatment residual \(\pink{\hat u}\) as the instrument for \(\orange{d}\).</details></div>
+
+  <p><strong>DML1 vs DML2</strong> — how to aggregate across folds:</p>
+  <div class="eq">$$\textbf{DML1:}\ \ \blue{\hat\alpha_{\rm DML}}=\frac1k\sum_{k}\blue{\hat\alpha_k}\qquad\text{(solve each fold, then average)}$$</div>
+  <div class="eq">$$\textbf{DML2:}\ \ \blue{\hat\alpha_{\rm DML}}=\Big[\tfrac1n\sum_{k}\sum_i \pink{\hat u_{ik}^2}\Big]^{-1}\Big[\tfrac1n\sum_{k}\sum_i \pink{\hat u_{ik}}\,\purple{\hat v_{ik}}\Big]\quad\text{(pool moments, solve once)}$$</div>
+  <p>DML2 pools the empirical moment across folds before solving — usually more stable, and the <code>doubleml</code> default.</p>
+
+  <h3 id="dr-ds"><span class="num">9</span>Double Selection (the pre-ML ancestor)</h3>
+  <p>Belloni–Chernozhukov–Hansen 2014 — estimate \(\alpha\) in \(y=d\,\alpha+x'\beta+\varepsilon\) with high-dimensional controls \(x\):</p>
+  <ul>
+    <li><strong>Step 1</strong> — Lasso regress \(y\) on \(x\); keep controls \(\hat I_1\) that predict the <span style="color:#3FB68B">outcome</span>.</li>
+    <li><strong>Step 2</strong> — Lasso regress \(d\) on \(x\); keep controls \(\hat I_2\) that predict the <span style="color:#6EA8FE">treatment</span>.</li>
+    <li><strong>Step 3</strong> — OLS of \(y\) on \(d\) and the <strong>union</strong> \(\hat I_1\cup\hat I_2\); the coefficient on \(d\) is \(\color[HTML]{C79A3A}{\hat\alpha}\).</li>
+  </ul>
+  <div class="box pitfall"><span class="tag">⚠️ Why the union (OMV)</span> <em>Single</em> selection (Step 1 only) can drop a control that weakly predicts \(y\) but <em>strongly</em> predicts \(d\) — a confounder → omitted-variable bias. Selecting controls that predict <em>either</em> closes the gap → uniformly valid inference under approximate sparsity. Same intuition as partialling-out: residualize \(y\) <em>and</em> \(d\) on \(x\).</div>
+
+  <h3 id="dr-family"><span class="num">10</span>The estimator family &amp; the two biases</h3>
+  <p>Naive ML plug-in carries <strong>two</strong> biases; the orthogonal score and cross-fitting kill one each:</p>
+  <table class="tt">
+    <tr><th>Bias</th><th>Source</th><th>Fix</th></tr>
+    <tr><td><strong>Regularization</strong></td><td>first-order in the ML bias of \(\hat g\) (\(\sqrt n\cdot n^{-\alpha}\to\infty\))</td><td><strong>Neyman orthogonality</strong> → bias becomes the <em>product</em> of nuisance errors (\(\alpha_g+\alpha_m\ge\tfrac12\))</td></tr>
+    <tr><td><strong>Overfitting</strong></td><td>nuisance fit correlates with its own-fold residual</td><td><strong>Cross-fitting</strong> → evaluate the moment out-of-fold</td></tr>
+  </table>
+  <p>The orthogonal score turns the leading bias into the <strong>product</strong> of the two nuisance errors (your notes, verbatim):</p>
+  <div class="eq">$$b=(\text{E}[V_i^2])^{-1}\tfrac1{\sqrt n}\sum_i \underbrace{\pink{[\hat m_0(X_i)-m_0(X_i)]}}_{\text{treatment-model error}}\times\underbrace{\green{[\hat g_0(X_i)-g_0(X_i)]}}_{\text{outcome-model error}}$$</div>
+  <p style="margin-top:-4px">→ vanishes once \(\alpha_g+\alpha_m\ge\tfrac12\) (e.g. both \(n^{-1/4}\)); the naive score instead has \(b\propto\sum_i m_0[g_0-\hat g_0]\to\infty\).</p>
+  <p>…and the lineage of estimators these two ideas produce:</p>
+  <table class="tt">
+    <tr><th>Estimator</th><th>Idea</th><th>\(\sqrt n\)?</th></tr>
+    <tr><td>Naive post-selection</td><td>single Lasso \(Y\!\sim\!X\), OLS on \(D\)+selected</td><td>✗ (OMV bias)</td></tr>
+    <tr><td>Double selection (BCH'14)</td><td>Lasso \(Y\!\sim\!X\) <em>and</em> \(D\!\sim\!X\), OLS on the union</td><td>✓</td></tr>
+    <tr><td>Partialling-out / Robinson</td><td>residualize \(Y,D\) on \(X\), residual-on-residual</td><td>✓</td></tr>
+    <tr><td>DML (CCDDHNR'18)</td><td>orthogonal score + cross-fitting, any ML</td><td>✓ efficient</td></tr>
+    <tr><td>PLIV / DS-IV (Cherno'15)</td><td>+ instrument \(z\) for endogenous \(d\)</td><td>✓</td></tr>
+  </table>
+  <p style="color:var(--muted);font-size:13px">Deep Lasso theory (rigorous/adaptive/root-Lasso, penalty loadings, PLIV proofs) lives in your Notion export, <code>paper-library/DML Export Notion/</code>.</p>
+
+  <footer>Sources · <a href="../papers/wager-causal-inference.md">papers note</a> · <a href="../notation/dml.md">dml.md</a> · <a href="../notation/ate-estimators.md">ate-estimators.md</a> · DML steps + family from Daniel's Notion notes</footer>
+</section>
+
+<!-- ============================ CH.4 HTE ============================ -->
+<section class="chapter" id="ch-hte">
+  <div class="crumb">Wager · ch.4 + Künzel 2019 + GRF 2019</div>
+  <h2 class="title">Heterogeneous Effects — CATE, metalearners &amp; causal forests</h2>
+  <p class="subtitle">From "what's the average effect" to "who responds" — the engine behind Game B targeting and the eval funnel.</p>
+  <p class="lead">Target the CATE \(\tau(x)=E[Y(1)-Y(0)\mid X{=}x]\) (point-identified; the ITE is not). Metalearners and causal forests are all the same orthogonal moment in different clothes.</p>
+
+  <h3 id="hte-cate"><span class="num">1</span>The CATE &amp; why naive fails</h3>
+  <p>The unrestricted optimal targeting rule thresholds the CATE: \(\pi^*(x)=\mathbb 1\{\tau(x)>0\}\) (ch.5). The obvious estimator —
+  fit \(\hat\mu_0,\hat\mu_1\) separately and subtract (the <strong>T-learner</strong>) — suffers <strong>regularization-induced confounding</strong>:</p>
+  <div class="box pitfall"><span class="tag">⚠️ The trap</span> When arms are unbalanced or differently complex, \(\hat\mu_0,\hat\mu_1\) are regularized differently, and their <em>difference</em> invents heterogeneity that isn't there. Don't target \(\tau\) by differencing two separately-tuned models.</div>
+
+  <h3 id="hte-meta"><span class="num">2</span>Metalearners (S / T / X)</h3>
+  <table class="tt">
+    <tr><th>Learner</th><th>Recipe</th><th>Best when</th></tr>
+    <tr><td><strong>S</strong>ingle</td><td>one model \(\hat\mu(x,w)\) with \(w\) as a feature; \(\hat\tau_S=\hat\mu(x,1)-\hat\mu(x,0)\)</td><td>effect small / possibly zero (shrinks toward 0)</td></tr>
+    <tr><td><strong>T</strong>wo</td><td>\(\hat\tau_T=\hat\mu_{(1)}-\hat\mu_{(0)}\)</td><td>effects large, arms balanced, data-rich</td></tr>
+    <tr><td><strong>X</strong> (Künzel)</td><td>impute ITEs vs other arm, regress, combine</td><td><em>unbalanced arms</em> — e.g. Vega's low-treated-share ramp</td></tr>
+  </table>
+  <span class="keylabel">X-learner (Künzel et al. 2019)</span>
+  <div class="eq">$$\tilde D_i^{1}=Y_i-\hat\mu_{(0)}(X_i)\ (\text{treated}),\quad \tilde D_i^{0}=\hat\mu_{(1)}(X_i)-Y_i\ (\text{control}),\quad
+  \hat\tau_X(x)=g(x)\hat\tau_0(x)+(1-g(x))\hat\tau_1(x)$$</div>
+  <div class="box intuition"><span class="tag">💡 Why X helps</span> It imputes each unit's effect using the <em>other</em> arm's (well-estimated) model, then down-weights the estimate from the smaller arm via \(g(x)\) (often \(\hat e\)). Provably adapts to CATE sparsity/smoothness and shines when one arm dwarfs the other.</div>
+
+  <h3 id="hte-r"><span class="num">3</span>R-learner &amp; DR-learner (the orthogonal ones)</h3>
+  <p><strong>R-learner</strong> (Nie–Wager) = Robinson residual-on-residual with the R-loss:</p>
+  <div class="eq key">$$\hat\tau=\arg\min_\tau\frac1n\sum_i\big(\purple{(Y_i-\hat\ell^{(-k)}(X_i))}-\pink{(W_i-\hat e^{(-k)}(X_i))}\,\blue{\tau(X_i)}\big)^2+\Lambda(\tau)$$</div>
+  <p style="font-size:12.5px;color:var(--muted);margin:-2px 0 12px">Exactly the DML partialling-out colours (ch.3 §8): <span style="color:#9D7BFF">●</span> \(y\)-residual · <span style="color:#E9548A">●</span> treatment-residual · <span style="color:#6EA8FE">●</span> target — because <strong>the R-learner <em>is</em> partialling-out</strong> with a featurized treatment.</p>
+  <p><strong>DR-learner</strong> (Kennedy) = regress the AIPW score \(\hat\Gamma_i\) (from ch.3) on \(X\). Both are Neyman-orthogonal — the principled defaults with ML nuisances.</p>
+
+  <h3 id="hte-forest"><span class="num">4</span>Causal forests / GRF</h3>
+  <p>A random forest is an <strong>adaptive kernel</strong>: \(\hat\mu(x)=\sum_i\alpha_i(x)Y_i\), where \(\alpha_i(x)\) = how often \(i\) shares a leaf with \(x\).
+  GRF reuses those weights to solve a <em>local</em> centered (R-learner) moment:</p>
+  <div class="eq key">$$\hat\tau(x)=\frac{\sum_i\alpha_i(x)\,\pink{(W_i-\hat e(X_i))}\,\purple{(Y_i-\hat\ell(X_i))}}{\sum_i\alpha_i(x)\,\pink{(W_i-\hat e(X_i))}^2}$$</div>
+  <div class="box intuition"><span class="tag">💡 One mental model</span> A causal forest is just the <strong>R-learner with forest weights</strong>. Metalearners, the R-learner, GRF, and DML are not four ideas — they're four instantiations of the same orthogonal moment. <strong>Honesty</strong> (split-sample within each tree) + subsampling give pointwise CIs (Wager–Athey 2018).</div>
+  <p>The useful <code>grf</code> readouts: <code>average_treatment_effect</code> (DR ATE+CI), <code>best_linear_projection</code> (which features drive heterogeneity),
+  and <strong><code>rank_average_treatment_effect</code> → RATE/AUTOC</strong> — a formal test that predicted uplift actually ranks units by realized effect.</p>
+
+  <h3 id="hte-vega"><span class="num">5</span>What it feeds in Vega</h3>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> <strong>RATE/AUTOC is the Game-B eval metric</strong>: does the ranker's predicted uplift rank users by their true effect? And <code>W.hat = 0.5</code> (known propensity — the engine sets it) removes propensity-estimation error, same cheat code as DR Cor 3.3. Use <code>econml</code> (<code>SLearner…XLearner, DRLearner, CausalForestDML</code>) / <code>causalml</code> — don't hand-roll.</div>
+  <footer>Sources · <a href="../notation/hte.md">hte.md</a> · <a href="../notation/metalearners.md">metalearners.md</a> · <a href="../notation/causal-forests.md">causal-forests.md</a> · <a href="../papers/hte-metalearners-forests.md">cluster note</a></footer>
+</section>
+
+<!-- ============================ CH.5 POLICY / OPE ============================ -->
+<section class="chapter" id="ch-policy">
+  <div class="crumb">Wager · ch.5</div>
+  <h2 class="title">Policy Learning &amp; Off-Policy Evaluation</h2>
+  <p class="subtitle">From estimating \(\tau(x)\) to deciding who to treat — and the doubly-robust policy value that is the OPE leg.</p>
+  <p class="lead">The AIPW <em>policy value</em> is exactly the doubly-robust off-policy evaluation estimator Vega's ranking leg needs; the policy <em>comparison</em> is the ship-decision number.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 90" width="100%" role="img" aria-label="Policy workflow">
+      <g class="node"><rect x="20" y="22" width="160" height="46" rx="9"/><text x="100" y="44" text-anchor="middle">Learn π̂</text><text x="100" y="60" text-anchor="middle" class="sub">train set, unconfounded</text></g>
+      <g class="node"><rect x="270" y="22" width="160" height="46" rx="9"/><text x="350" y="44" text-anchor="middle">Evaluate V(π̂)</text><text x="350" y="60" text-anchor="middle" class="sub">test set · AIPW</text></g>
+      <g class="node hl"><rect x="520" y="22" width="160" height="46" rx="9"/><text x="600" y="44" text-anchor="middle">Deploy</text><text x="600" y="60" text-anchor="middle" class="sub">no more randomness</text></g>
+      <path class="edge" d="M180 45 L270 45"/><path class="edge" d="M430 45 L520 45"/>
+    </svg>
+  </figure>
+
+  <h3 id="pol-value"><span class="num">1</span>Policy value &amp; OPE</h3>
+  <p>Policy \(\pi:\mathcal X\to\{0,1\}\), value \(V(\pi)=E[Y_i(\pi(X_i))]\). The doubly-robust (AIPW) estimate is the OPE workhorse:</p>
+  <div class="eq key">$$\hat V_{AIPW}(\pi)=\frac1n\sum_i\Big[\hat\mu_{\pi(X_i)}(X_i)+\frac{\mathbb 1\{W_i=\pi(X_i)\}}{P(W_i=\pi(X_i)\mid X_i)}\big(Y_i-\hat\mu_{\pi(X_i)}(X_i)\big)\Big]$$</div>
+
+  <h3 id="pol-cmp"><span class="num">2</span>Policy comparison = ship decision</h3>
+  <div class="eq">$$\hat\Delta_{AIPW}(\pi_1,\pi_2)=\frac1n\sum_i(\pi_1(X_i)-\pi_2(X_i))\,\hat\Gamma_i$$</div>
+  <div class="box intuition"><span class="tag">💡 Why it's precise</span> Only units where \(\pi_1,\pi_2\) <em>disagree</em> contribute — so comparing a new ranker to the status quo needs far less data than estimating each value. \(\Delta(\pi,\mathbf 0)\) = the policy's benefit; \(\Delta(\mathbf 1)=\) ATE.</div>
+
+  <h3 id="pol-qini"><span class="num">3</span>QINI / TOC — uplift evaluation</h3>
+  <p>Priority \(S(x)\), treat top-\(q\): <strong>QINI</strong> plots benefit \(\Delta(\pi_S^q)\) vs \(q\) (cost-benefit of spending more);
+  <strong>TOC</strong> plots \(q^{-1}\Delta(\pi_S^q)-\Delta(\mathbf 1)\) (do the top-\(q\) beat random?). AUC-TOC with \(S=\hat\tau\) ↔ the RATE/AUTOC from ch.4.</p>
+
+  <h3 id="pol-ewm"><span class="num">4</span>Empirical-welfare maximization</h3>
+  <p>Learn over a restricted class \(\Pi\): \(\hat\pi=\arg\max_{\pi\in\Pi}\hat V(\pi)\). Regret \(\sqrt n\,E[R(\hat\pi)]\lesssim\sqrt{\mathrm{VC}(\Pi)V^*}\).
+  Equivalent to <strong>weighted classification</strong>: label = \(\mathrm{sign}(\hat\Gamma_i)\), weight = \(|\hat\Gamma_i|\).</p>
+  <div class="box pitfall"><span class="tag">⚠️ Two cautions</span> (1) Don't swap in a logistic/hinge surrogate — the guarantees break. (2) Restrict the <em>deploy</em> class \(\Pi\): gameable / protected / hard-to-measure features stay in \(\hat\mu,\hat e\) but out of \(\pi\).</div>
+
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> \(\hat V_{AIPW}(\pi)\) <strong>is</strong> <code>inference/ope.py</code> — score a counterfactual ranker from logs, validate vs the engine's known policy value. \(\hat\Delta(\hat\pi,\pi_0)\) = the Game-B ship-decision banner; QINI/TOC = the uplift readout.</div>
+  <footer>Sources · <a href="../notation/policy-learning.md">policy-learning.md</a> · <a href="../notation/hte.md">hte.md</a></footer>
+</section>
+
+<!-- ============================ CH.11-12 INTERFERENCE ============================ -->
+<section class="chapter" id="ch-int">
+  <div class="crumb">Wager · ch.11–12 · <span style="color:var(--vega)">the Vega thesis</span></div>
+  <h2 class="title">Spillovers &amp; Interference</h2>
+  <p class="subtitle">When one unit's treatment moves another's outcome — the heart of why naive A/B is biased in a marketplace, and how to fix it.</p>
+  <p class="lead">SUTVA fails ⇒ up to \(2^n\) potential outcomes \(Y_i(\mathbf w)\). Tame it with <strong>exposure mappings</strong>; do <strong>randomization-only</strong> inference; and discover that clustering recovers cluster-robust SEs.</p>
+
+  <h3 id="int-exp"><span class="num">1</span>Exposure mappings — taming \(2^n\)</h3>
+  <p>An exposure mapping \(H_i(\mathbf w)\) summarizes how the whole assignment hits \(i\): \(Y_i(\mathbf w)=Y_i(\mathbf w')\) when \(H_i(\mathbf w)=H_i(\mathbf w')\).
+  Test which one you need via a nested ladder (closed testing ⇒ no multiplicity):</p>
+  <figure>
+    <svg viewBox="0 0 540 200" width="100%" role="img" aria-label="Nested null hierarchy">
+      <g class="node"><rect x="20" y="20" width="500" height="30" rx="7"/><text x="34" y="40">H₀ — no causal effect</text><text x="510" y="40" text-anchor="end" class="sub">sharp null</text></g>
+      <g class="node hl"><rect x="40" y="58" width="480" height="30" rx="7"/><text x="54" y="78">H₁ — no spillover (<tspan style="fill:#6ea8fe">SUTVA</tspan>) · what naive A/B assumes</text></g>
+      <g class="node"><rect x="60" y="96" width="460" height="30" rx="7"/><text x="74" y="116">H₂ — anonymous (own + fraction of treated neighbours)</text></g>
+      <g class="node"><rect x="80" y="134" width="440" height="30" rx="7"/><text x="94" y="154">H₃ — network interference</text></g>
+      <g class="node"><rect x="100" y="172" width="420" height="24" rx="7"/><text x="114" y="188">H₄ — generic spillovers · the marketplace DGP</text></g>
+    </svg>
+    <figcaption>Naive A/B assumes \(H_1\); Vega's engine lives near \(H_4\). The gap is the bias the ramp diagnostic exposes.</figcaption>
+  </figure>
+  <p><strong>Cluster interference</strong> \(H_i=(w_j)_{j\in C_i}\): no cross-cluster spillover ⇒ SUTVA <em>at the cluster level</em> ⇒ cluster-randomize and analyze normally.</p>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> The ride-sharing example is Vega's archetype: give all drivers incentives and per-trip pay rises, but more drivers log on, idle time grows, and the hourly gain cancels — <strong>spillover via market re-equilibration</strong>. Budget cannibalization &amp; shared attention are the same thing.</div>
+
+  <h3 id="int-est"><span class="num">2</span>Estimating exposure effects (IPW / Horvitz–Thompson)</h3>
+  <p>Exposure effect \(\bar\tau(h,h')=\frac1n\sum_i(Y_i(h')-Y_i(h))\). With exposure propensity \(e_i(h)=P(H_i(\mathbf W)=h)\), HT/IPW is unbiased for free:</p>
+  <div class="eq key">$$\hat\tau_{IPW}(h,h')=\frac1n\sum_i\Big[\frac{\mathbb 1\{H_i=h'\}Y_i}{e_i(h')}-\frac{\mathbb 1\{H_i=h\}Y_i}{e_i(h)}\Big],\qquad E_W[\hat\tau_{IPW}]=\bar\tau(h,h')$$</div>
+
+  <h3 id="int-var"><span class="num">3</span>Finite-population variance → cluster-robust SEs</h3>
+  <p>No superpopulation; potential outcomes fixed, randomness only from \(\mathbf W\) (Neyman). The true variance isn't identified, but the
+  IID variance estimate is a <em>conservative bound</em>. With dependency graph \(G_{ij}=\mathbb 1\{(\{i\}\cup N_i)\cap(\{j\}\cup N_j)\neq\varnothing\}\), the HAC variance is</p>
+  <div class="eq">$$\hat\sigma^2(h,h')=\tfrac1n(\Gamma(h')\odot\mathbf Y-\Gamma(h)\odot\mathbf Y)^\top G\,(\Gamma(h')\odot\mathbf Y-\Gamma(h)\odot\mathbf Y)$$</div>
+  <div class="box vega"><span class="tag">🎯 Vega hook — the cluster justification</span> When \(G\) is <strong>block/cluster-diagonal, this HAC variance is exactly the cluster-robust estimator</strong>. So cluster-robust SEs aren't an IID convenience — they're the <em>finite-population-correct</em> thing under randomization alone. That's the citation behind <code>inference/cluster.py</code> (and ties to Hansen 2025's jackknife).</div>
+
+  <h3 id="int-mkt"><span class="num">4</span>Direct / indirect effects &amp; the marketplace</h3>
+  <div class="eq">$$\tau_{ADE}=\tfrac1n\sum_iE_W[Y_i(1,\mathbf W_{-i})-Y_i(0,\mathbf W_{-i})],\quad
+  \tau_{AIE}=\tfrac1n\sum_i\sum_{j\neq i}E_W[Y_j(W_i{=}1,\mathbf W_{-i})-Y_j(W_i{=}0,\mathbf W_{-i})]$$</div>
+  <div class="box intuition"><span class="tag">💡 Closest to Vega</span> <strong>Munro–Kuang–Wager 2025</strong> derive these under <em>marketplace equilibrium interference</em> (prices align supply &amp; demand) with spillover-aware CATE targeting — essentially the Vega DGP. Acquire it (INDEX §02).</div>
+  <footer>Sources · <a href="../notation/interference.md">interference.md</a> · <a href="../papers/wager-causal-inference.md">papers note</a></footer>
+</section>
+
+<!-- ============================ CH.1-2 RCT & IPW ============================ -->
+<section class="chapter" id="ch-rct">
+  <div class="crumb">Wager · ch.1–2 · Tier 2</div>
+  <h2 class="title">RCTs &amp; Inverse-Propensity Weighting</h2>
+  <p class="subtitle">The foundation: how randomization identifies effects, and the first move beyond it — unconfoundedness + the propensity score.</p>
+  <p class="lead">Difference-in-means is unbiased almost for free; regression adjustment is a free variance cut (= CUPED); and once treatment isn't randomized, the propensity \(\pink{e(x)}\) carries everything.</p>
+
+  <div class="box"><span class="tag" style="color:var(--accent)">📋 Assumptions (the standard trio)</span>
+  <strong>1. SUTVA</strong> — \(Y_i=Y_i(W_i)\) (no interference; one version of treatment). &nbsp;
+  <strong>2. Unconfoundedness</strong> (Rosenbaum–Rubin 1983) — \(W_i\perp\!\!\!\perp(Y_i(0),Y_i(1))\mid X_i\). &nbsp;
+  <strong>3. Overlap / positivity</strong> — \(\eta\le \pink{e(x)}\le 1-\eta\).
+  <br/>In an RCT, unconfoundedness holds <em>by design</em> with \(\pink{e(x)}=\pi\) known. Regression-with-controls quietly adds two <em>more</em> (constant effects + linearity — §6).</div>
+
+  <h3 id="rct-estimand"><span class="num">1</span>Estimand &amp; SUTVA</h3>
+  <p>Potential outcomes \(Y_i(0),Y_i(1)\), with \(Y_i=Y_i(W_i)\) (SUTVA). Target: the ATE \(\tau=E[Y_i(1)-Y_i(0)]\). The individual effect \(\Delta_i=Y_i(1)-Y_i(0)\) is never observed — only one arm per unit.</p>
+
+  <h3 id="rct-dm"><span class="num">2</span>Difference-in-means → <code>naive.py</code></h3>
+  <div class="eq key">$$\hat\tau_{DM}=\frac1{n_1}\sum_{W_i=1}Y_i-\frac1{n_0}\sum_{W_i=0}Y_i,\qquad \sqrt n(\hat\tau_{DM}-\tau)\Rightarrow N(0,V_{DM}),\ \ V_{DM}=\tfrac{\mathrm{Var}[Y(1)]}{\pi}+\tfrac{\mathrm{Var}[Y(0)]}{1-\pi}$$</div>
+  <p>Unbiased under randomization <em>essentially without assumptions</em>. CI: \(\hat\tau_{DM}\pm\Phi^{-1}(1-\tfrac\alpha2)\sqrt{\hat V_{DM}/n}\). This is Vega's biased-under-interference baseline.</p>
+
+  <h3 id="rct-reg"><span class="num">3</span>Regression adjustment = CUPED → <code>cuped.py</code></h3>
+  <p>Fit the interacted regression \(Y\sim\alpha+W\tau+X\beta+WX\gamma\); report \(\hat\tau_{IREG}=\hat\tau+\bar X\hat\gamma\).</p>
+  <div class="box intuition"><span class="tag">💡 A free lunch</span> The interacted regression is <strong>never worse</strong> than diff-in-means asymptotically — \(V_{IREG}=V_{DM}-\lVert\beta_{(0)}^*+\beta_{(1)}^*\rVert_A^2\le V_{DM}\) — <em>even if the linear model is misspecified</em>. Exactly the CUPED variance-reduction logic.</div>
+
+  <h3 id="rct-unconf"><span class="num">4</span>Unconfoundedness &amp; the propensity score</h3>
+  <p>Drop randomization, assume \(\{Y(0),Y(1)\}\perp\!\!\!\perp W\mid X\). The propensity \(\pink{e(x)}=P(W{=}1\mid X{=}x)\) is a <strong>balancing score</strong>:</p>
+  <div class="eq">$$\{Y(0),Y(1)\}\perp\!\!\!\perp W\mid \pink{e(X)}\qquad(\text{conditioning on }\pink{e(X)}\text{ suffices, not all of }X)$$</div>
+  <div class="box pitfall"><span class="tag">⚠️ Not "add X to a regression"</span> Under unconfoundedness, throwing \(X\) into \(Y\sim\alpha+W\tau+X\beta\) is <em>not</em> consistent for the ATE — you must adjust non-parametrically (stratify / IPW / AIPW).</div>
+
+  <h3 id="rct-ipw"><span class="num">5</span>IPW, stratification &amp; overlap</h3>
+  <div class="eq key">$$\hat\tau_{IPW}=\frac1n\sum_i\Big[\frac{W_iY_i}{\pink{e(X_i)}}-\frac{(1-W_i)Y_i}{\pink{1-e(X_i)}}\Big]$$</div>
+  <p>Stratification (discrete \(X\)): \(\hat\tau_{STRAT}=\sum_x\tfrac{n_x}{n}\hat\tau(x)\) — its variance doesn't grow with the number of strata. Oracle IPW is unbiased but <em>inefficient</em>; the fix is AIPW (→ ch.3). <strong>Overlap</strong> \(\eta\le \pink{e(x)}\le 1-\eta\) is load-bearing — if \(W\) is perfectly predictable from \(X\), no effect is identified.</p>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> The engine <em>sets</em> \(\pink{e(x)}\), so <strong>overlap holds by construction</strong> and the propensity is known — recovery tests get clean coverage (and AIPW needs no nuisance-rate condition, ch.3 Cor 3.3). Cluster-level stratification → <code>inference/cluster.py</code>.</div>
+
+  <h3 id="rct-reg-controls"><span class="num">6</span>Regression with rich controls — the linearity tax</h3>
+  <p>The econometrician's reflex is to "control for \(X\)" by running \(Y_i=\alpha+\tau W_i+\beta'X_i+\varepsilon_i\). But this is <strong>not justified by unconfoundedness alone</strong> (Wager ch.2) — it silently adds two assumptions (Imbens–Wooldridge 2009):</p>
+  <ol>
+    <li><strong>Constant treatment effects</strong> \(\tau=Y_i(1)-Y_i(0)\) (no heterogeneity), and</li>
+    <li><strong>Linearity</strong> of \(\mu_{(0)}(x)=E[Y(0)\mid X{=}x]=\alpha+\beta'x\).</li>
+  </ol>
+  <p>Given both, unconfoundedness \(\Leftrightarrow \varepsilon_i\perp\!\!\!\perp W_i\mid X_i\) and OLS \(\hat\tau\) is the ATE. The non-parametric <strong>imputation estimator</strong> needs neither:</p>
+  <div class="eq">$$\hat\tau_{reg}=\frac1N\sum_i\big(\green{\hat\mu_{(1)}(X_i)}-\green{\hat\mu_{(0)}(X_i)}\big)\ \xrightarrow{\ \text{linear arms}\ }\ \hat\alpha_1-\hat\alpha_0\ \ (=\text{coef on }W\text{ in the interacted regression, §3})$$</div>
+  <div class="box pitfall"><span class="tag">⚠️ The OLS-weighting trap (Angrist)</span> With discrete \(X\), plain-control OLS and IPW are <em>both</em> weighted averages of group effects \(\tau_x\) — but with different weights:
+  $$\tau^{IPW}=\frac{\sum_x\tau_x\,\pink{e(x)}\,P(X{=}x)}{\sum_x \pink{e(x)}\,P(X{=}x)},\qquad
+  \tau^{OLS}=\frac{\sum_x\tau_x\,\pink{\sigma^2_{W|x}}\,P(X{=}x)}{\sum_x \pink{\sigma^2_{W|x}}\,P(X{=}x)},\quad \pink{\sigma^2_{W|x}}=e(x)(1-e(x))$$
+  OLS weights by the <strong>conditional variance of treatment</strong> \(\pink{\sigma^2_{W|x}}\) — maximal at \(e(x)=\tfrac12\) — so it over-weights 50/50-split strata and under-weights imbalanced ones, equalling the ATE <em>only if</em> effects are constant (\(\tau_x\equiv\tau\)). IPW weights by treatment probability and targets the ATE directly.</div>
+  <p>Bottom line: regression can be <em>severely</em> biased if the linear model is wrong globally (Imbens–Wooldridge) — the field moved to matching / weighting / doubly-robust. This is the "linearity tax" the AIPW/DML machinery (ch.3) removes.</p>
+  <footer>Sources · <a href="../notation/ate-estimators.md">ate-estimators.md</a> · <a href="../papers/wager-causal-inference.md">papers note</a> · Imbens–Wooldridge 2009 + Daniel's Notion notes</footer>
+</section>
+
+<!-- ============================ CH.10 IV & LATE ============================ -->
+<section class="chapter" id="ch-iv">
+  <div class="crumb">Wager · ch.10 · Tier 2</div>
+  <h2 class="title">Instrumental Variables &amp; LATE</h2>
+  <p class="subtitle">When treatment is endogenous, a randomized <em>nudge</em> identifies the effect — for the compliers. The frame behind ghost-ads incrementality.</p>
+  <p class="lead">The IV (Wald) ratio recovers the average effect among the units the instrument actually moves — the <strong>compliers</strong>. Ghost-ads/holdout is exactly this: the reward nudges engagement.</p>
+
+  <h3 id="iv-setup"><span class="num">1</span>Setup &amp; the four assumptions</h3>
+  <p>Instrument \(\orange{Z}\), treatment received \(W\) (endogenous), outcome \(Y\); \(W_i=W_i(\orange{Z_i})\).</p>
+  <ul>
+    <li><strong>Exclusion</strong> — \(\orange{Z}\) affects \(Y\) only through \(W\).</li>
+    <li><strong>Exogeneity</strong> — \(\orange{Z}\) is randomized (independent of potential outcomes).</li>
+    <li><strong>Relevance</strong> — \(\orange{Z}\) moves \(W\): \(E[W_i(1)-W_i(0)]\neq0\).</li>
+    <li><strong>Monotonicity</strong> — no defiers.</li>
+  </ul>
+
+  <h3 id="iv-wald"><span class="num">2</span>The Wald estimand</h3>
+  <div class="eq key">$$\hat\tau_{IV}=\frac{\widehat{\mathrm{Cov}}[Y,\orange{Z}]}{\widehat{\mathrm{Cov}}[W,\orange{Z}]}=\frac{E[Y\mid \orange{Z}{=}1]-E[Y\mid \orange{Z}{=}0]}{E[W\mid \orange{Z}{=}1]-E[W\mid \orange{Z}{=}0]}$$</div>
+  <p>The reduced-form (ITT) divided by the first-stage take-up.</p>
+
+  <h3 id="iv-late"><span class="num">3</span>LATE = the compliers' effect</h3>
+  <div class="eq key">$$\tau_{IV}=E\big[Y_i(1)-Y_i(0)\mid C_i=\text{complier}\big]$$</div>
+  <table class="tt">
+    <tr><th></th><th>\(W(1)=0\)</th><th>\(W(1)=1\)</th></tr>
+    <tr><th>\(W(0)=0\)</th><td>never-taker</td><td><strong>complier</strong></td></tr>
+    <tr><th>\(W(0)=1\)</th><td>defier (ruled out)</td><td>always-taker</td></tr>
+  </table>
+  <p>Practical: raw diff-in-means \(\div\) first-stage take-up = LATE (Oregon Medicaid: ÷ 0.3). Different instruments → different complier sets → <em>different</em> LATEs (don't naively pool without linearity).</p>
+
+  <h3 id="iv-demand"><span class="num">4</span>Supply–demand IV &amp; the MTE</h3>
+  <p>With an instrument that shifts supply but not demand, IV recovers a positive-weighted average of demand slopes over the price range the instrument moves — the elasticity story. The <strong>marginal treatment effect</strong> \(\tau(u)\) generalizes LATE via local IV: \(\tau(c(z))=\tfrac{d/dz\,E[Y\mid Z=z]}{d/dz\,P(W{=}1\mid Z=z)}\).</p>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> <strong>Ghost-ads / holdout = an encouragement (IV) design.</strong> The reward \(\orange{Z}\) nudges engagement \(W\); the lift on advertiser conversions among <em>responders</em> is a LATE — that's <code>inference/incrementality.py</code>, validated against the engine's known effect. The same IV logic anchors reward-elasticity calibration.</div>
+  <footer>Sources · <a href="../notation/iv-late.md">iv-late.md</a> · <a href="../papers/wager-causal-inference.md">papers note</a></footer>
+</section>
+
+<!-- ============================ CH.13 DiD & EVENT STUDY ============================ -->
+<section class="chapter" id="ch-did">
+  <div class="crumb">Wager · ch.13 · Tier 2</div>
+  <h2 class="title">Difference-in-Differences &amp; Event Studies</h2>
+  <p class="subtitle">Panel data, off→on adoption, parallel trends — and the staggered-adoption trap that quietly breaks two-way fixed effects.</p>
+  <p class="lead">DiD identifies the ATT under <strong>parallel trends</strong>; but the familiar TWFE regression is <em>biased</em> under staggered adoption — use imputation/ASR or cohort-wise estimators.</p>
+
+  <h3 id="did-setup"><span class="num">1</span>Panel setup &amp; assumptions</h3>
+  <p>\(Y_{it},\ W_{it}\in\{0,1\}\), treatment only switches off→on. <strong>Block adoption</strong>: shared event time \(H\). <strong>Staggered</strong>: unit-specific start \(H_i\). Assumes <strong>non-anticipation</strong> (\(Y_{it}(0)=Y_{it}(1)\) for \(t\le H\)) and <strong>parallel trends</strong> (untreated potential outcomes evolve in parallel).</p>
+
+  <figure>
+    <svg viewBox="0 0 600 200" width="100%" role="img" aria-label="Parallel trends and the DiD effect">
+      <defs><marker id="arrd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#C79A3A"/></marker></defs>
+      <line x1="40" y1="170" x2="575" y2="170" stroke="#46506a" stroke-width="1"/>
+      <line x1="300" y1="20" x2="300" y2="170" stroke="#33405a" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="300" y="190" text-anchor="middle" fill="#9aa3b2" font-size="11">event time H</text>
+      <polyline points="50,140 300,112 560,90" fill="none" stroke="#96A0B2" stroke-width="2"/>
+      <text x="566" y="92" fill="#96A0B2" font-size="11">control</text>
+      <polyline points="50,112 300,84" fill="none" stroke="#6EA8FE" stroke-width="2"/>
+      <polyline points="300,84 560,46" fill="none" stroke="#6EA8FE" stroke-width="2"/>
+      <text x="566" y="48" fill="#6EA8FE" font-size="11">treated</text>
+      <polyline points="300,84 560,62" fill="none" stroke="#6EA8FE" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.55"/>
+      <line x1="548" y1="62" x2="548" y2="48" stroke="#C79A3A" stroke-width="1.6" marker-end="url(#arrd)"/>
+      <text x="542" y="58" text-anchor="end" fill="#C79A3A" font-size="11">ATT</text>
+    </svg>
+    <figcaption>Parallel pre-trends; post-\(H\) the gap between treated and its (dashed) counterfactual is the ATT.</figcaption>
+  </figure>
+
+  <h3 id="did-est"><span class="num">2</span>The DiD estimator</h3>
+  <div class="eq key">$$\hat\tau_{DID}=\big[\bar Y^{\text{post}}_{D=1}-\bar Y^{\text{pre}}_{D=1}\big]-\big[\bar Y^{\text{post}}_{D=0}-\bar Y^{\text{pre}}_{D=0}\big]$$</div>
+  <div class="box intuition"><span class="tag">💡 Two justifications</span> DiD is unbiased under <em>randomized adoption</em> <strong>or</strong> under <em>parallel trends</em> — a double-robustness-style property for the same estimator.</div>
+
+  <h3 id="did-twfe"><span class="num">3</span>The TWFE staggered trap</h3>
+  <div class="eq">$$Y_{it}\sim\alpha_i+\beta_t+W_{it}\tau$$</div>
+  <div class="box pitfall"><span class="tag">⚠️ Negative weights</span> TWFE equals DiD under <em>block</em> adoption — but under <strong>staggered</strong> adoption \(\hat\tau\) is biased: implied weights \(\gamma_{it}\) can be <em>negative</em> for already-treated units used as controls ("forbidden comparisons"). It can converge negative even if every effect is positive.</div>
+
+  <h3 id="did-fix"><span class="num">4</span>The fix &amp; synthetic control</h3>
+  <p><strong>Averaged saturated regression / imputation</strong> (Borusyak–Jaravel–Spiess; Wooldridge): saturate \(Y_{it}\sim\alpha_i+\beta_t+W_{it}\theta_{it}\), then average \(\hat\theta_{it}\) over treated cells. Or <strong>cohort-wise</strong> estimators (Callaway–Sant'Anna, Sun–Abraham). When parallel trends fails, <strong>SDID</strong> reweights controls to restore it.</p>
+  <div class="box vega"><span class="tag">🎯 Vega hook</span> Phase-3 DiD verticals — and a caution for any <strong>panel/day-level readout</strong> over the event log: don't use plain TWFE under staggered rollout; use <code>pyfixest</code> (Sun–Abraham) / <code>differences</code> (Callaway–Sant'Anna), and <strong>cluster by unit</strong> (the DiD analogue of cluster-robust SEs — ties to Hansen 2025 + <code>inference/cluster.py</code>).</div>
+  <footer>Sources · <a href="../notation/event-study-did.md">event-study-did.md</a> · <a href="../papers/wager-causal-inference.md">papers note</a></footer>
+</section>
+</main>
+
+<script>
+  const chaps=[...document.querySelectorAll('.chap')];
+  const toc=document.getElementById('toc');
+  let io=null;
+  function buildTOC(sec){
+    toc.innerHTML='';
+    sec.querySelectorAll('h3[id]').forEach(h=>{
+      const a=document.createElement('a');
+      a.href='#'+h.id;
+      a.textContent=h.textContent.replace(/^\s*\d+(·\d+)?\s*/,'').trim();
+      a.onclick=e=>{e.preventDefault();h.scrollIntoView();};
+      toc.appendChild(a);
+    });
+    const links=[...toc.querySelectorAll('a')];
+    const map=new Map(sec.querySelectorAll('h3[id]').length?[...sec.querySelectorAll('h3[id]')].map((h,i)=>[h.id,links[i]]):[]);
+    if(io)io.disconnect();
+    io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){
+      links.forEach(l=>l.classList.remove('on'));const a=map.get(e.target.id);if(a)a.classList.add('on');}})},
+      {rootMargin:'-15% 0px -75% 0px'});
+    sec.querySelectorAll('h3[id]').forEach(h=>io.observe(h));
+  }
+  function show(id){
+    document.querySelectorAll('.chapter').forEach(s=>s.classList.toggle('show',s.id===id));
+    chaps.forEach(c=>c.classList.toggle('active',c.dataset.target===id));
+    const sec=document.getElementById(id); buildTOC(sec);
+    window.scrollTo({top:0}); location.hash=id;
+    if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([sec]);
+  }
+  chaps.forEach(c=>c.onclick=()=>show(c.dataset.target));
+  const fromHash=location.hash.slice(1);
+  show(fromHash && document.getElementById(fromHash) ? fromHash : 'ch-dr');
+</script>
+</body>
+</html>

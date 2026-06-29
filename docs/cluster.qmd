@@ -1,0 +1,138 @@
+---
+title: "Cluster-robust inference"
+subtitle: "Why naive standard errors lie when randomization happens at the cluster, not the user."
+---
+
+::: {.lead}
+When units share a cluster — a city, a store, a switchback window — their outcomes are correlated, and an
+analyst who treats them as independent reports a standard error that is too small and a confidence interval
+that is too tight. The fix is to make the variance estimator cluster-aware; the trap is that "cluster-aware"
+itself fails quietly when there are few clusters. *(Math recycled from `notation/cluster-robust-se.md`.)*
+:::
+
+## The problem: shared shocks understate naive SEs {#sec-problem}
+
+Stack the regression by cluster $g=1..G$, with block $(\mathbf y_g,\mathbf X_g,\mathbf u_g)$ of size $N_g$
+and $\sum_g N_g = N$:
+
+$$
+\mathbf y = \mathbf X\boldsymbol\beta + \mathbf u .
+$$
+
+A per-cluster shock $\alpha_g$ on the error — in Lyra's engine, a random effect on each agent's utility shared
+by everyone in cluster $g$ — induces **within-cluster correlation**. Its size is the **intraclass
+correlation** (ICC):
+
+$$
+\rho \;=\; \frac{\operatorname{Var}(\alpha_g)}{\operatorname{Var}(\alpha_g)+\operatorname{Var}(\varepsilon_{ig})},
+\qquad y_{ig}=\beta x_g+\alpha_g+\varepsilon_{ig}.
+$$
+
+The iid variance estimator ignores the off-diagonal $\operatorname{Cov}(u_{ig},u_{jg})$ terms. When the
+regressor is also constant (or correlated) within cluster — exactly the case for **cluster-randomized**
+treatment — the naive SE is understated by the **Moulton factor**:
+
+$$
+\frac{\text{true SE}}{\text{naive SE}} \;\approx\; \sqrt{\,1+\rho_x\,\rho\,(\bar N_g-1)\,}\;\;\xrightarrow[\;\rho_x=1\;]{}\;\;\sqrt{1+(\bar N_g-1)\rho}.
+$$
+
+Even a tiny $\rho$ multiplied by a large average cluster size $\bar N_g$ inflates the true SE substantially —
+so the naive interval can be off by a factor well above one while looking perfectly confident. This is why a
+naive cluster-randomized A/A test [false-flags]{.bias}: its intervals are too narrow to cover the (zero)
+truth at the nominal rate.
+
+## The cluster-robust sandwich (CV1) {#sec-cv1}
+
+The fix replaces the iid meat with a sum of outer products of **cluster scores**
+$\hat{\mathbf s}_g=\mathbf X_g^\top\hat{\mathbf u}_g$, so within-cluster correlation of any form is absorbed:
+
+$$
+\text{CV1}=c\,(\mathbf X^\top\mathbf X)^{-1}\Big(\sum_{g}\hat{\mathbf s}_g\hat{\mathbf s}_g^\top\Big)(\mathbf X^\top\mathbf X)^{-1},
+\qquad c=\frac{G}{G-1}\frac{N-1}{N-K}.
+$$
+
+This is the cluster-robust variance estimator (CRVE) — the workhorse, `statsmodels`'
+`cov_type="cluster"`. It is **consistent as $G\to\infty$** and degenerates cleanly to the heteroskedasticity-
+robust HC0–HC3 family when $G=N$, which `lyra/se.py` pins as a unit-test invariant. One structural limit:
+its **rank is $\min(K,\,G-1)$**, so you cannot joint-test more parameters than you have clusters minus one.
+
+### Small-sample variants CV2 / CV3 {#sec-cv23}
+
+CV1's meat is biased downward because OLS residuals are shrunk by the projection. Two corrections lift it,
+each the cluster analogue of an HC variant:
+
+- **CV2** (Bell–McCaffrey, "HC2 for clusters") pre-whitens residuals by the inverse symmetric square root of
+  the hat block $\mathbf M_{gg}=\mathbf I_{N_g}-\mathbf H_{gg}$:
+  $$
+  \grave{\mathbf s}_g=\mathbf X_g^\top \mathbf M_{gg}^{-1/2}\hat{\mathbf u}_g,\qquad
+  \text{CV2}=(\mathbf X^\top\mathbf X)^{-1}\Big(\sum_g\grave{\mathbf s}_g\grave{\mathbf s}_g^\top\Big)(\mathbf X^\top\mathbf X)^{-1}.
+  $$
+  It is exactly unbiased when $\mathrm E[\mathbf u_g\mathbf u_g^\top]=\sigma^2\mathbf I$ — `estimatr`'s default.
+
+- **CV3** (jackknife, "HC3 for clusters") is leave-one-cluster-out, with a closed-form update so **no refits**
+  are needed:
+  $$
+  \text{CV3}=\frac{G-1}{G}\sum_{g}(\hat{\boldsymbol\beta}^{(g)}-\bar{\boldsymbol\beta})(\hat{\boldsymbol\beta}^{(g)}-\bar{\boldsymbol\beta})^\top,
+  \quad \hat{\boldsymbol\beta}^{(g)}=\hat{\boldsymbol\beta}-(\mathbf X^\top\mathbf X)^{-1}\mathbf X_g^\top \mathbf M_{gg}^{-1}\hat{\mathbf u}_g .
+  $$
+  It is the most conservative — it can under-reject — and is what `summclust` reports.
+
+Pair any of these with a $T(G-1)$ reference distribution rather than $N(0,1)$; the best small-$G$ analytic
+combination is **CV2 with Satterthwaite degrees of freedom** $v^*=(\sum_j\lambda_j)^2/\sum_j\lambda_j^2$.
+
+## The few-clusters problem & the wild cluster bootstrap {#sec-wcr}
+
+::: {.callout-warning appearance="simple"}
+**A cluster-robust SE is not automatically safe.** With few clusters, OLS overfits, residuals shrink, and the
+meat — an average of only $G$ terms with no law of large numbers — is biased *down*. Empirical size of CV1 at
+the 1.96 critical value runs about .07 / .08 / .12 / .21 at $G=30/20/10/5$, and is worse with **few *treated*
+clusters** even when total $G$ is large (the Glovo / switchback failure mode). Below ~20 effective clusters,
+reach for the bootstrap.
+:::
+
+The **wild cluster restricted (WCR) bootstrap** bootstraps the *pivotal* cluster-robust $t$-statistic, not
+$\hat\beta$, which buys an asymptotic refinement (size error $O(G^{-1})\!\to\!O(G^{-3/2})$). To test
+$H_0:\beta_k=\beta_0$:
+
+1. Fit OLS **subject to $H_0$** → restricted residuals $\tilde{\mathbf u}_g$ and scores $\tilde{\mathbf s}_g$;
+   compute the original $t$ from the unrestricted fit.
+2. For $b=1..B$, draw **one weight per cluster** $v_g^{*}$ (Rademacher $\pm1$ w.p. ½), form bootstrap scores
+   $\mathbf s_g^{*}=v_g^{*}\tilde{\mathbf s}_g$, and recompute the cluster-robust $t^{*}_b$.
+3. Report the symmetric p-value $\hat P^{*}=\frac1B\sum_b\mathbf 1(|t^{*}_b|>|t|)$, or invert for a CI.
+
+```python
+from lyra.se import cluster_robust, wild_cluster_bootstrap
+
+# CV1 / CV2 / CV3 sandwich on a cluster-randomized fit
+res = cluster_robust(y, X, clusters=g, variant="CV3", dof="satterthwaite")
+
+# few clusters: bootstrap the pivotal t instead
+p = wild_cluster_bootstrap(y, X, clusters=g, h0=0.0,
+                           weights="webb", B=9999)   # Webb 6-point when G < 10
+```
+
+With Rademacher weights only $2^{G-1}$ distinct $|t|$ values exist, so the p-value cannot be finer than
+$1/2^{G-1}$ (a floor of 0.0625 at $G=5$); switch to **Webb 6-point** weights $\{\pm\sqrt{0.5},\pm1,\pm\sqrt{1.5}\}$
+whenever $G<10$.
+
+## Certification {#sec-certify}
+
+The recovery test runs [the harness](harness.qmd) on Lyra's engine, where a per-cluster random effect on
+utility plants a within-cluster **ICC $\approx 0.02$**. Two A/A designs meet it — and the asymmetry is the
+whole lesson:
+
+| design | naive user-level SE | cluster-robust (CV1/CV3 + $T(G{-}1)$) | reads |
+|---|---|---|---|
+| **cluster-randomized A/A** | understated → over-flags ($\alpha$ inflated) | ≈ **1.3× wider**, A/A no-flag at nominal size | naive [uncertified]{.bias} · CRVE [certified]{.cert} |
+| **user-randomized A/A** | unaffected — shared $\alpha_g$ cancels across balanced arms | identical | both [certified]{.cert} |
+
+Under **cluster randomization** the shared $\alpha_g$ does *not* cancel between arms, so the naive SE is
+understated and the A/A test false-flags; widening by the Moulton factor (≈ 1.3×) restores correct type-I.
+Under **user randomization** the same $\alpha_g$ is balanced across arms and cancels, so naive and robust SEs
+agree — the "Glovo asymmetry." The certification verdict: cluster-robust inference is [certified]{.cert} (A/A
+holds size) precisely where naive inference is [uncertified]{.bias}, and the harness reports the exact size
+inflation rather than asserting it.
+
+This mirrors the [ATE chapter](ate.qmd)'s pattern — same loop, only the variance estimator changes — and the
+correction matters only when randomization is coarser than the unit of analysis. Get the level of
+randomization right and you get the standard error right.

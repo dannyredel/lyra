@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A measurement company for music marketing — a proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#181A2E; --ink-soft:#23263F;
+    --paper:#F3F4F7; --paper-pure:#FBFBFC;
+    --text:#262A3F; --text-soft:#5B5F78;
+    --text-dk:#EDEEF5; --text-dk-soft:#A7ABCB;
+    --signal:#E3A23A; --signal-deep:#C7842A;
+    --baseline:#7E8BAA;
+    --line:rgba(24,26,46,.12); --line-dk:rgba(255,255,255,.13);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:"Hanken Grotesk",system-ui,sans-serif;background:var(--ink);color:var(--text);
+    overflow:hidden;-webkit-font-smoothing:antialiased}
+  .deck{height:100vh;width:100vw;position:relative}
+
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(28px,6vw,104px);opacity:0;visibility:hidden;transform:translateY(14px);
+    transition:opacity .5s ease,transform .6s cubic-bezier(.2,.7,.2,1),visibility .5s;
+    background:var(--paper);overflow:hidden}
+  .slide.active{opacity:1;visibility:visible;transform:none;z-index:2}
+  .slide.prev{transform:translateY(-14px)}
+  .slide--dark{background:var(--ink);color:var(--text-dk)}
+  .slide--ink2{background:linear-gradient(160deg,#181A2E 0%,#20233B 100%);color:var(--text-dk)}
+
+  .slide .r{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+  .slide.active .r{opacity:1;transform:none}
+  .slide.active .r:nth-child(1){transition-delay:.06s}
+  .slide.active .r:nth-child(2){transition-delay:.14s}
+  .slide.active .r:nth-child(3){transition-delay:.22s}
+  .slide.active .r:nth-child(4){transition-delay:.30s}
+  .slide.active .r:nth-child(5){transition-delay:.38s}
+
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:clamp(11px,1.05vw,13px);letter-spacing:.22em;
+    text-transform:uppercase;color:var(--signal-deep);display:flex;align-items:center;gap:.7em;
+    margin-bottom:clamp(18px,2.4vw,32px)}
+  .slide--dark .eyebrow,.slide--ink2 .eyebrow{color:var(--signal)}
+  .eyebrow::before{content:"";width:26px;height:1px;background:currentColor;opacity:.55}
+
+  h1{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(34px,6vw,80px);line-height:1.02;
+    letter-spacing:-.015em;max-width:18ch}
+  h2{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(28px,4.4vw,58px);line-height:1.05;
+    letter-spacing:-.012em;max-width:21ch}
+  .lede{font-size:clamp(15px,1.6vw,21px);line-height:1.5;color:var(--text-soft);max-width:54ch;
+    margin-top:clamp(16px,2vw,26px);font-weight:400}
+  .slide--dark .lede,.slide--ink2 .lede{color:var(--text-dk-soft)}
+  em{font-style:italic;color:var(--signal-deep)}
+  .slide--dark em,.slide--ink2 em{color:var(--signal)}
+  strong{font-weight:600;color:var(--text)}
+  .slide--dark strong,.slide--ink2 strong{color:#fff}
+
+  .split{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,68px);align-items:center}
+  .cover-meta{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.05em;
+    color:var(--text-dk-soft);margin-top:clamp(26px,4vw,46px);line-height:1.9}
+  .cover-meta b{color:#fff;font-weight:500}
+  .chart-cap{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.03em;
+    color:var(--text-dk-soft);margin-top:14px;line-height:1.7}
+  .chart-cap .amb{color:var(--signal)}
+  .slide:not(.slide--dark):not(.slide--ink2) .chart-cap{color:var(--text-soft)}
+
+  .grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(13px,1.5vw,20px);
+    margin-top:clamp(20px,3vw,38px);max-width:860px}
+  .tool{border:1px solid var(--line);border-radius:14px;padding:clamp(16px,2vw,26px);background:var(--paper-pure)}
+  .tool .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--signal-deep);letter-spacing:.1em}
+  .tool h3{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(18px,1.7vw,23px);margin:8px 0 6px;letter-spacing:-.01em}
+  .tool p{font-size:13.5px;line-height:1.5;color:var(--text-soft)}
+
+  .contrast{margin-top:clamp(18px,2.2vw,28px);display:grid;gap:10px;max-width:48ch}
+  .crow{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:baseline;padding:11px 0;border-top:1px solid var(--line-dk)}
+  .crow .ck{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+  .crow.pred .ck{color:var(--baseline)} .crow.caus .ck{color:var(--signal)}
+  .crow .cv{font-size:clamp(14px,1.5vw,17px);line-height:1.4;color:var(--text-dk-soft)}
+  .crow .cv b{color:#fff;font-weight:600}
+
+  .qlist{margin-top:clamp(18px,2.6vw,32px);max-width:760px}
+  .qlist .q{display:flex;gap:18px;align-items:baseline;padding:14px 0;border-top:1px solid var(--line-dk)}
+  .qlist .q:last-child{border-bottom:1px solid var(--line-dk)}
+  .qlist .qm{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--signal);min-width:30px}
+  .qlist .qt{font-family:"Fraunces",serif;font-size:clamp(17px,2vw,25px);font-weight:400;line-height:1.25;letter-spacing:-.01em;color:#fff}
+
+  .points{margin-top:clamp(20px,2.6vw,32px);display:grid;gap:clamp(12px,1.4vw,17px);max-width:720px}
+  .point{display:flex;gap:16px;align-items:flex-start}
+  .point .d{width:8px;height:8px;border-radius:50%;background:var(--signal);margin-top:9px;flex:none}
+  .point p{font-size:clamp(15px,1.5vw,18px);line-height:1.45;color:var(--text-soft)}
+  .point p b{color:var(--text);font-weight:600}
+  .slide--dark .point p,.slide--ink2 .point p{color:var(--text-dk-soft)}
+  .slide--dark .point p b,.slide--ink2 .point p b{color:#fff}
+
+  .found{display:flex;flex-wrap:wrap;gap:12px;margin-top:clamp(20px,3vw,36px)}
+  .chip{font-family:"IBM Plex Mono",monospace;font-size:clamp(12px,1.2vw,14px);border:1px solid var(--line-dk);
+    border-radius:40px;padding:11px 20px;color:var(--text-dk);letter-spacing:.03em}
+  .chip.amb{border-color:var(--signal);color:var(--signal)}
+
+  .idea{display:grid;grid-template-columns:auto 1fr;gap:clamp(26px,4vw,64px);align-items:center}
+  .idea-num{font-family:"Fraunces",serif;font-weight:400;font-size:clamp(80px,15vw,200px);line-height:.8;
+    color:transparent;-webkit-text-stroke:1.4px var(--signal);letter-spacing:-.02em}
+  .idea-body{max-width:30ch}
+  .idea-who{font-family:"IBM Plex Mono",monospace;font-size:clamp(12px,1.2vw,14px);letter-spacing:.16em;
+    text-transform:uppercase;color:var(--signal-deep);margin-bottom:14px}
+  .slide--dark .idea-who,.slide--ink2 .idea-who{color:var(--signal)}
+  .idea-q{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(26px,3.6vw,48px);line-height:1.05;letter-spacing:-.012em}
+  .idea-wedge{margin-top:20px;font-size:clamp(15px,1.6vw,19px);line-height:1.5;color:var(--text-soft)}
+  .idea-wedge b{color:var(--text);font-weight:600}
+  .slide--dark .idea-wedge{color:var(--text-dk-soft)} .slide--dark .idea-wedge b{color:#fff}
+  .idea-note{margin-top:18px;display:inline-flex;align-items:center;gap:9px;font-family:"IBM Plex Mono",monospace;
+    font-size:12px;letter-spacing:.04em;color:var(--signal-deep)}
+  .slide--dark .idea-note{color:var(--signal)}
+  .idea-note::before{content:"\2192";color:var(--signal)}
+
+  .combine{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,70px);align-items:center}
+  .doors{display:grid;gap:14px}
+
+  /* convergence case-study cards */
+  .cases{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:clamp(20px,2.6vw,34px)}
+  .case{border:1px solid var(--line-dk);border-radius:14px;padding:clamp(16px,1.9vw,24px);display:flex;flex-direction:column;gap:12px}
+  .case .wm{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(19px,2vw,27px);letter-spacing:-.01em;color:#fff}
+  .case .wm .dot{color:var(--signal)}
+  .case .span{display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.03em;color:var(--text-dk-soft)}
+  .case .span .hop{color:var(--signal)}
+  .case .span .arw{color:var(--baseline)}
+  .conv-kicker{margin-top:clamp(20px,2.4vw,30px);font-family:"IBM Plex Mono",monospace;font-size:clamp(12px,1.3vw,15px);letter-spacing:.04em;color:var(--signal)}
+  .door{display:flex;gap:16px;align-items:center;border:1px solid var(--line-dk);border-radius:12px;padding:16px 20px}
+  .door .dn{font-family:"IBM Plex Mono",monospace;color:var(--signal);font-size:13px;min-width:26px}
+  .door .dt{font-size:clamp(15px,1.5vw,18px);color:var(--text-dk)}
+  .door .dt b{color:#fff;font-weight:600}
+
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:clamp(18px,2.4vw,28px)}
+  .stage{border:1px solid var(--line);border-radius:14px;padding:clamp(15px,1.8vw,22px);background:var(--paper-pure);position:relative}
+  .stage::after{content:"\2192";position:absolute;right:-15px;top:50%;transform:translateY(-50%);color:var(--signal);
+    font-size:16px;z-index:3}
+  .stage:last-child::after{display:none}
+  .stage .sn{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;color:var(--signal-deep)}
+  .stage h3{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(16px,1.6vw,21px);margin:7px 0 6px;letter-spacing:-.01em}
+  .stage p{font-size:12.5px;line-height:1.45;color:var(--text-soft)}
+  .stage .tag{margin-top:9px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--baseline)}
+  .whois{display:flex;gap:clamp(20px,3vw,46px);margin-top:clamp(18px,2.2vw,28px);flex-wrap:wrap}
+  .who{flex:1;min-width:170px}
+  .who .wl{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--signal-deep);margin-bottom:7px}
+  .who p{font-size:14px;line-height:1.4;color:var(--text-soft)}
+  .who p b{color:var(--text);font-weight:600}
+
+  .sim{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,3.5vw,56px);
+    margin-top:clamp(16px,2.4vw,28px);align-items:center}
+  .sim-inputs{display:grid;gap:clamp(14px,1.6vw,20px)}
+  .field label{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:12px;
+    letter-spacing:.04em;color:var(--text-dk-soft);margin-bottom:9px}
+  .field label .val{color:var(--signal)}
+  .field input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;background:var(--line-dk);
+    border-radius:3px;outline:none}
+  .field input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--signal);cursor:pointer;border:none}
+  .field input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--signal);cursor:pointer;border:none}
+  .field input[type=range]:focus-visible{outline:2px solid var(--signal);outline-offset:6px}
+  .presets{display:flex;gap:8px;margin-top:4px}
+  .presets button{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;border:1px solid var(--line-dk);
+    background:transparent;color:var(--text-dk-soft);padding:8px 15px;border-radius:30px;cursor:pointer;transition:.2s}
+  .presets button:hover{border-color:var(--signal);color:var(--signal)}
+  .sim-out{border:1px solid var(--line-dk);border-radius:16px;padding:clamp(20px,2.6vw,32px)}
+  .sim-out .ol{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--signal)}
+  .sim-out .big{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(40px,5.6vw,72px);color:#fff;
+    letter-spacing:-.02em;line-height:1;margin:10px 0 16px}
+  .sim-out .row{display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-dk-soft);
+    padding:8px 0;border-top:1px solid var(--line-dk)}
+  .sim-out .row b{color:#fff;font-weight:500;font-family:"IBM Plex Mono",monospace}
+
+  .names{display:grid;grid-template-columns:repeat(2,1fr);gap:12px clamp(28px,4vw,58px);
+    margin-top:clamp(18px,2.6vw,32px);max-width:1000px}
+  .name{display:flex;gap:16px;align-items:baseline;padding:12px 0;border-top:1px solid var(--line)}
+  .name .nm{font-family:"Fraunces",serif;font-size:clamp(18px,1.9vw,25px);font-weight:500;min-width:126px;letter-spacing:-.01em}
+  .name.pick .nm{color:var(--signal-deep)}
+  .name .rs{font-size:13px;line-height:1.4;color:var(--text-soft)}
+  .name .star{font-family:"IBM Plex Mono",monospace;color:var(--signal-deep);font-size:11px;margin-left:5px}
+
+  .steps{display:grid;gap:11px;margin-top:clamp(22px,3vw,34px);max-width:760px}
+  .step{border:1px solid var(--line-dk);border-radius:12px;padding:15px 20px;display:flex;gap:16px;align-items:baseline}
+  .step .sk{color:var(--signal);font-family:"IBM Plex Mono",monospace;font-size:12px;min-width:24px}
+  .step .sx{font-size:clamp(14px,1.5vw,17px);line-height:1.45;color:var(--text-dk-soft)}
+  .step .sx b{color:#fff;font-weight:600}
+
+  .chrome{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;justify-content:space-between;
+    padding:14px clamp(20px,4vw,40px);pointer-events:none;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em}
+  .chrome .lab{color:var(--text-soft);opacity:.55}
+  .deck.on-dark .chrome .lab{color:var(--text-dk-soft);opacity:.7}
+  .nav{display:flex;gap:8px;pointer-events:auto}
+  .nav button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--text);
+    cursor:pointer;font-size:15px;display:grid;place-items:center;transition:background .2s,border-color .2s,color .2s}
+  .deck.on-dark .nav button{border-color:var(--line-dk);color:var(--text-dk)}
+  .nav button:hover{background:var(--signal);border-color:var(--signal);color:#181A2E}
+  .nav button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+  .progress{position:fixed;top:0;left:0;height:3px;background:var(--signal);z-index:30;width:0;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .dots{position:fixed;right:clamp(16px,2vw,28px);top:50%;transform:translateY(-50%);z-index:30;display:flex;flex-direction:column;gap:9px;pointer-events:auto}
+  .dots button{width:8px;height:8px;border-radius:50%;border:none;cursor:pointer;padding:0;background:var(--line);transition:background .25s,transform .25s}
+  .deck.on-dark .dots button{background:rgba(255,255,255,.22)}
+  .dots button.on{background:var(--signal);transform:scale(1.35)}
+
+  @media (max-width:860px){
+    .split,.idea,.combine,.sim,.names,.cases{grid-template-columns:1fr}
+    .grid4,.stages{grid-template-columns:1fr}
+    .stage::after{display:none}
+    .idea-num{font-size:92px}
+    .dots{display:none}
+    h1{font-size:clamp(30px,8vw,44px)}
+    .crow{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+    .slide .r{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+  <section class="slide slide--dark active">
+    <div class="split">
+      <div>
+        <div class="eyebrow r">A co-founder proposal</div>
+        <h1 class="r">Did the spend cause it &mdash; or would it have happened anyway?</h1>
+        <p class="lede r">The one question every marketer asks and almost none can answer. I think there's a company in answering it &mdash; for music.</p>
+        <div class="cover-meta r">A proposal to build it together<br><b>Causal measurement for music marketing</b></div>
+      </div>
+      <div class="r">
+        <svg viewBox="0 0 460 300" width="100%" aria-label="Observed sales versus the counterfactual baseline; the gap is incremental lift.">
+          <defs><linearGradient id="wedge" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#E3A23A" stop-opacity=".42"/><stop offset="100%" stop-color="#E3A23A" stop-opacity=".04"/></linearGradient></defs>
+          <line x1="40" y1="258" x2="440" y2="258" stroke="rgba(255,255,255,.18)"/>
+          <line x1="40" y1="40" x2="40" y2="258" stroke="rgba(255,255,255,.18)"/>
+          <path class="fade-in" d="M40,210 C140,190 240,150 340,86 C380,62 410,52 440,46 L440,180 C410,182 380,188 340,196 C240,214 140,220 40,224 Z" fill="url(#wedge)" opacity="0"/>
+          <path class="fade-in" d="M40,224 C140,220 240,214 340,196 C380,189 410,184 440,180" fill="none" stroke="#7E8BAA" stroke-width="2.5" stroke-dasharray="5 6" opacity="0"/>
+          <path class="draw" d="M40,210 C140,190 240,150 340,86 C380,62 410,52 440,46" fill="none" stroke="#E3A23A" stroke-width="3.2"/>
+          <circle class="fade-in" cx="440" cy="46" r="4.5" fill="#E3A23A" opacity="0"/>
+        </svg>
+        <div class="chart-cap"><span class="amb">&mdash; observed</span> &middot; - - what would've happened anyway &middot; <span class="amb">the gap = incremental lift</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow r">What I bring</div>
+    <h2 class="r">I build the tools that answer that question.</h2>
+    <p class="lede r">A deep toolkit from causal econometrics and applied data science &mdash; the same measurement stack Google, Meta and the biggest DTC brands use, and that almost no one has brought to music.</p>
+    <div class="grid4 r">
+      <div class="tool"><div class="n">01</div><h3>Causal inference</h3><p>Separating what your spend <em>caused</em> from what would have happened regardless.</p></div>
+      <div class="tool"><div class="n">02</div><h3>Geo-lift experiments</h3><p>Randomised market holdouts &mdash; the closest thing to ground truth in marketing.</p></div>
+      <div class="tool"><div class="n">03</div><h3>Marketing-mix modelling</h3><p>One model across every channel, returning the marginal return on each euro.</p></div>
+      <div class="tool"><div class="n">04</div><h3>Incrementality testing</h3><p>The honest number behind the platform-reported one &mdash; net of the baseline.</p></div>
+    </div>
+  </section>
+
+  <section class="slide slide--ink2">
+    <div class="split">
+      <div>
+        <div class="eyebrow r">The workhorse &middot; causal inference</div>
+        <h2 class="r">Prediction guesses what happens next. Causal inference proves what you <em>caused</em>.</h2>
+        <p class="lede r">We build the <strong>counterfactual</strong> &mdash; what would have happened without the campaign &mdash; and measure the gap. That gap is the effect: the average treatment effect, or <strong>ATT</strong>.</p>
+        <div class="contrast r">
+          <div class="crow pred"><span class="ck">Prediction</span><span class="cv">"Sales will rise." <b>Correlation, forecasting</b> &mdash; useful, but blind to cause.</span></div>
+          <div class="crow caus"><span class="ck">Causal</span><span class="cv">"Your spend is <b>why</b> they rose &mdash; by this much." The number you can act on.</span></div>
+        </div>
+      </div>
+      <div class="r">
+        <svg viewBox="0 0 480 300" width="100%" aria-label="Synthetic-control style chart: treated unit versus its counterfactual, diverging after the intervention; the gap is the ATT.">
+          <defs><linearGradient id="effGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#E3A23A" stop-opacity=".36"/><stop offset="100%" stop-color="#E3A23A" stop-opacity=".03"/></linearGradient></defs>
+          <line x1="50" y1="258" x2="466" y2="258" stroke="rgba(255,255,255,.18)"/>
+          <line x1="50" y1="40" x2="50" y2="258" stroke="rgba(255,255,255,.18)"/>
+          <path class="fade-in" d="M250,156 C330,124 395,92 460,70 L460,136 C395,143 330,150 250,156 Z" fill="url(#effGrad)" opacity="0"/>
+          <line x1="250" y1="58" x2="250" y2="258" stroke="rgba(255,255,255,.28)" stroke-dasharray="4 5"/>
+          <text x="250" y="278" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#A7ABCB">campaign starts</text>
+          <path class="fade-in" d="M50,172 C110,164 180,160 250,156 C330,150 395,143 460,136" fill="none" stroke="#7E8BAA" stroke-width="2.5" stroke-dasharray="5 6" opacity="0"/>
+          <path class="draw" d="M50,172 C110,164 180,160 250,156 C330,124 395,92 460,70" fill="none" stroke="#E3A23A" stroke-width="3.2"/>
+          <circle class="fade-in" cx="460" cy="70" r="4.5" fill="#E3A23A" opacity="0"/>
+          <circle class="fade-in" cx="460" cy="136" r="4" fill="#7E8BAA" opacity="0"/>
+          <text class="fade-in" x="298" y="116" font-family="IBM Plex Mono,monospace" font-size="16" font-weight="500" fill="#E3A23A" opacity="0">ATT = +38%</text>
+        </svg>
+        <div class="chart-cap"><span class="amb">&mdash; treated (actual)</span> &middot; - - synthetic control &middot; the gap after the line = the effect</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow r">The opening</div>
+    <h2 class="r">The tools are powerful. They belong to the music industry.</h2>
+    <p class="lede r">Measurement is marketing's hardest problem &mdash; and music is where it's most neglected. The method already exists. What's missing is bringing it inside an industry that has never had it.</p>
+    <p class="lede r" style="margin-top:14px"><strong>So the question was never whether this works. It's how &mdash; and for whom.</strong></p>
+  </section>
+
+  <section class="slide slide--dark">
+    <div class="eyebrow r">The problem &mdash; everywhere in music</div>
+    <h2 class="r">Five dashboards. Five answers. None of them true.</h2>
+    <div class="qlist r">
+      <div class="q"><span class="qm">Q1</span><span class="qt">Did that campaign cause the result &mdash; or would it have happened anyway?</span></div>
+      <div class="q"><span class="qm">Q2</span><span class="qt">Which channel actually worked, when every platform claims the same win?</span></div>
+      <div class="q"><span class="qm">Q3</span><span class="qt">Where should the next euro go?</span></div>
+      <div class="q"><span class="qm">Q4</span><span class="qt">Is the ROAS the agency reports anywhere near real?</span></div>
+    </div>
+    <p class="lede r">Every ad platform grades its own homework &mdash; and over-counts. Nobody sells the independent number.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow r">Why music &middot; why now</div>
+    <h2 class="r">Music spends big on marketing &mdash; and measures it terribly.</h2>
+    <div class="points r">
+      <div class="point"><span class="d"></span><p>The measurement rigour that reshaped e-commerce <b>never reached music</b>.</p></div>
+      <div class="point"><span class="d"></span><p>The real driver &mdash; an artist announcement, an editorial playlist &mdash; <b>gets credited to the ads</b> running next to it.</p></div>
+      <div class="point"><span class="d"></span><p>Post-cookie and post-ATT, the old attribution numbers are <b>breaking in plain sight</b>.</p></div>
+      <div class="point"><span class="d"></span><p>The methods have matured and the data has opened up &mdash; <b>this is newly buildable</b>.</p></div>
+    </div>
+  </section>
+
+  <section class="slide slide--ink2">
+    <div class="eyebrow r">One engine</div>
+    <h2 class="r">One measurement engine. Many doors.</h2>
+    <p class="lede r">The same foundation answers the same question in every corner of the industry. What changes is the customer and the outcome it measures.</p>
+    <div class="found r">
+      <span class="chip amb">incrementality</span><span class="chip amb">geo-lift</span>
+      <span class="chip amb">marketing-mix modelling</span><span class="chip amb">causal inference</span>
+      <span class="chip">&rarr; independent ad analytics for music</span>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="idea">
+      <div class="idea-num r">01</div>
+      <div class="idea-body">
+        <div class="idea-who r">Idea one &middot; Labels &amp; distributors</div>
+        <div class="idea-q r">Did our ads build real fans &mdash; or just rent streams?</div>
+        <p class="idea-wedge r">The wedge: <b>organic vs. paid.</b> Is the momentum behind a release real, or bought? The number Spotify and Meta can't sell you.</p>
+        <span class="idea-note r">most differentiated &middot; hardest data</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide slide--dark">
+    <div class="idea">
+      <div class="idea-num r">02</div>
+      <div class="idea-body">
+        <div class="idea-who r">Idea two &middot; Promoters, festivals &amp; venues</div>
+        <div class="idea-q r">Did our ads sell the tickets &mdash; or did the announcement?</div>
+        <p class="idea-wedge r">The wedge: <b>announcement vs. ads,</b> per market. The on-sale spike is the artist's &mdash; the spend takes the credit. Cleanest data, sharpest pain.</p>
+        <span class="idea-note r">clean outcome &middot; real pain &middot; a tailwind from the Ticketmaster antitrust ruling</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="idea">
+      <div class="idea-num r">03</div>
+      <div class="idea-body">
+        <div class="idea-who r">Idea three &middot; Music-tech &amp; creative brands</div>
+        <div class="idea-q r">Did the brand and artist marketing move product?</div>
+        <p class="idea-wedge r">The wedge: <b>the creative-brand segment enterprise tools ignore</b> &mdash; gear, software, instruments. Heavy brand &amp; artist spend, measured on gut.</p>
+        <span class="idea-note r">warm network &middot; the fastest path to first revenue</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide slide--dark">
+    <div class="eyebrow r">The wave we'd catch</div>
+    <h2 class="r">The walls between streams, sales and tickets are coming down.</h2>
+    <p class="lede r">The biggest electronic brands no longer pick a lane. The same operator drives streams, sells downloads and fills rooms &mdash; and can't measure across any of it. <strong>Independent measurement is the missing layer, arriving exactly as the walls fall.</strong></p>
+    <div class="cases r">
+      <div class="case">
+        <div class="wm">selected<span class="dot">.</span></div>
+        <div class="span"><span class="hop">streams</span> <span class="arw">&rarr;</span> <span class="hop">label</span> <span class="arw">&rarr;</span> <span class="hop">live shows</span></div>
+      </div>
+      <div class="case">
+        <div class="wm">Monstercat</div>
+        <div class="span"><span class="hop">channel</span> <span class="arw">&rarr;</span> <span class="hop">label</span> <span class="arw">&rarr;</span> <span class="hop">Tomorrowland + tours</span></div>
+      </div>
+      <div class="case">
+        <div class="wm">beatport</div>
+        <div class="span"><span class="hop">DJ sales</span> <span class="arw">&rarr;</span> <span class="hop">+ tickets</span> <span class="arw">&middot;</span> <span style="color:var(--text-dk-soft)">launched 2025</span></div>
+      </div>
+    </div>
+    <div class="conv-kicker r">Same audience. Three revenue lines. One number nobody has.</div>
+  </section>
+
+  <section class="slide slide--ink2">
+    <div class="combine">
+      <div>
+        <div class="eyebrow r">The shape of it</div>
+        <h2 class="r">Three doors. One company.</h2>
+        <p class="lede r">Same method, same engine. We enter through the door where pain, data and network line up &mdash; then expand along the engine into the others. <strong>The industry is converging anyway; we measure across the seams.</strong></p>
+      </div>
+      <div class="doors r">
+        <div class="door"><span class="dn">01</span><span class="dt"><b>Labels</b> &mdash; streams</span></div>
+        <div class="door"><span class="dn">02</span><span class="dt"><b>Live</b> &mdash; ticket sales</span></div>
+        <div class="door"><span class="dn">03</span><span class="dt"><b>Brands</b> &mdash; product sales</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow r">The proposal</div>
+    <h2 class="r">Start as a service. Grow into software.</h2>
+    <p class="lede r"><strong>The one number not sold to you by the people running your ads.</strong> We earn trust doing the work by hand, then turn the repeatable parts into product.</p>
+    <div class="stages r">
+      <div class="stage"><div class="sn">STAGE 01</div><h3>Consultancy</h3><p>Bespoke teardowns and geo-lift studies, run by us on real client data. Sharpens the method and pays the bills.</p><div class="tag">cashflow &middot; learning</div></div>
+      <div class="stage"><div class="sn">STAGE 02</div><h3>Productised service</h3><p>Templated, repeatable engagements on a retainer &mdash; standard pipelines, faster delivery, recurring revenue.</p><div class="tag">recurring &middot; scalable delivery</div></div>
+      <div class="stage"><div class="sn">STAGE 03</div><h3>Software &amp; dashboard</h3><p>Self-serve, always-on measurement. The repeatable engine becomes a SaaS product with its own margins.</p><div class="tag">margin &middot; scale</div></div>
+    </div>
+    <div class="whois r">
+      <div class="who"><div class="wl">Me</div><p>The <b>method</b>, the models, the product.</p></div>
+      <div class="who"><div class="wl">Barbara</div><p>The <b>industry</b>, the relationships, the commercial side.</p></div>
+      <div class="who"><div class="wl">Together</div><p>A <b>moat</b>: rigour the incumbents won't build, access they can't buy.</p></div>
+    </div>
+  </section>
+
+  <section class="slide slide--dark">
+    <div class="eyebrow r">The business &mdash; turn the dials</div>
+    <h2 class="r" style="max-width:24ch">Boutique by design. Profitable. No outside capital required.</h2>
+    <div class="sim r">
+      <div class="sim-inputs">
+        <div class="field"><label>Paying accounts <span class="val" id="vAcc">35</span></label><input type="range" id="acc" min="0" max="150" step="1" value="35"></div>
+        <div class="field"><label>Avg. subscription / account / yr <span class="val" id="vPrice">&euro;24k</span></label><input type="range" id="price" min="0" max="60000" step="1000" value="24000"></div>
+        <div class="field"><label>Geo-lift studies / account / yr <span class="val" id="vStud">2</span></label><input type="range" id="stud" min="0" max="6" step="1" value="2"></div>
+        <div class="field"><label>Price / study <span class="val" id="vSp">&euro;6k</span></label><input type="range" id="sp" min="0" max="12000" step="500" value="6000"></div>
+        <div class="presets">
+          <button data-p="6,18000,1,6000">Year 1</button>
+          <button data-p="35,24000,2,6000">Year 3</button>
+          <button data-p="90,24000,1,6000">Year 5</button>
+        </div>
+      </div>
+      <div class="sim-out">
+        <div class="ol">Annual revenue</div>
+        <div class="big" id="total">&euro;1.26M</div>
+        <div class="row"><span>Subscriptions</span><b id="rSub">&euro;840k</b></div>
+        <div class="row"><span>Geo-lift studies</span><b id="rStud">&euro;420k</b></div>
+        <div class="row"><span>Contribution @ 60%</span><b id="rContrib">&euro;756k</b></div>
+      </div>
+    </div>
+    <p class="lede r" style="margin-top:18px;font-size:14px">Directional and pre-validation &mdash; your assumptions, not a forecast. The value events are vivid: a rescued show, a budget defended, six figures of wasted spend caught.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow r">What we'd call it</div>
+    <h2 class="r">Names.</h2>
+    <div class="names r">
+      <div class="name pick"><span class="nm">Counterpoint<span class="star">&starf;</span></span><span class="rs">Independent melodic lines in harmony &mdash; and a counter to the platforms' self-scoring. The independence <em>is</em> the pitch.</span></div>
+      <div class="name pick"><span class="nm">Contrapunt<span class="star">&starf;</span></span><span class="rs">The same idea, European spelling. Cleaner, ownable, a touch sharper.</span></div>
+      <div class="name"><span class="nm">Liftpunt</span><span class="rs">"Lift" (incremental lift) + punt (point). Technical, punchy, distinctly ours.</span></div>
+      <div class="name"><span class="nm">Downbeat</span><span class="rs">The beat that drives the bar &mdash; and a beat is a measure. Timing + rigour.</span></div>
+      <div class="name"><span class="nm">Puntillo</span><span class="rs">The dotted note that extends a beat &mdash; a quiet musical-notation pun. Playful.</span></div>
+      <div class="name"><span class="nm">Truelift</span><span class="rs">The real lift, net of the baseline. Plain, clear, says what it does.</span></div>
+      <div class="name"><span class="nm">Resonant</span><span class="rs">Marketing that genuinely resonates &mdash; i.e. actually causes &mdash; versus noise.</span></div>
+      <div class="name"><span class="nm">Cadence</span><span class="rs">A musical resolution and a marketing rhythm. Warm, but check it's free.</span></div>
+    </div>
+  </section>
+
+  <section class="slide slide--ink2">
+    <div class="eyebrow r">The ask</div>
+    <h1 class="r">Want to find out if it's real?</h1>
+    <p class="lede r">Nothing here needs funding or a leap of faith &mdash; just a few cheap weeks and an inside read on which door is the right one.</p>
+    <div class="steps r">
+      <div class="step"><span class="sk">01</span><span class="sx"><b>A six-week method test</b> &mdash; proving the engine recovers a known answer on simulated data, before we build anything.</span></div>
+      <div class="step"><span class="sk">02</span><span class="sx"><b>Ten honest conversations</b> across the industry &mdash; does the pain convert, and who actually holds the budget?</span></div>
+      <div class="step"><span class="sk">03</span><span class="sx"><b>The teardown.</b> We take one real, past campaign &mdash; a prospect's actual spend and sales data &mdash; run the validated engine, and hand back the independent read as a clear report. Free, low-lift, proves it on their own numbers (and tells us if the data is even reachable).</span></div>
+    </div>
+    <p class="lede r" style="margin-top:24px;color:#fff;font-weight:500">I'll bring the method. You bring the industry.</p>
+  </section>
+
+</div>
+
+<div class="chrome">
+  <div class="lab" id="counter">01 / 16</div>
+  <div class="nav"><button id="prev" aria-label="Previous slide">&lsaquo;</button><button id="next" aria-label="Next slide">&rsaquo;</button></div>
+</div>
+<div class="dots" id="dots" role="tablist" aria-label="Slides"></div>
+
+<script>
+(function(){
+  const deck=document.getElementById('deck');
+  const slides=[...deck.querySelectorAll('.slide')];
+  const dotsWrap=document.getElementById('dots');
+  const counter=document.getElementById('counter');
+  const progress=document.getElementById('progress');
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let i=0;
+
+  slides.forEach((s,n)=>{
+    const b=document.createElement('button');
+    b.setAttribute('role','tab');b.setAttribute('aria-label','Go to slide '+(n+1));
+    b.addEventListener('click',()=>go(n));dotsWrap.appendChild(b);
+  });
+  const dots=[...dotsWrap.children];
+
+  function animateSlide(s){
+    if(reduce){s.querySelectorAll('.fade-in').forEach(e=>e.style.opacity=1);return;}
+    if(s.dataset.animated)return; s.dataset.animated='1';
+    s.querySelectorAll('.draw').forEach(p=>{
+      const L=p.getTotalLength();
+      p.style.strokeDasharray=L;p.style.strokeDashoffset=L;
+      p.getBoundingClientRect();
+      p.style.transition='stroke-dashoffset 1.5s cubic-bezier(.2,.7,.2,1)';
+      p.style.strokeDashoffset='0';
+    });
+    s.querySelectorAll('.fade-in').forEach((e,k)=>{
+      e.style.transition='opacity .9s ease';
+      setTimeout(()=>e.style.opacity=1, 650+k*140);
+    });
+  }
+
+  function go(n){
+    if(n<0||n>=slides.length)return;
+    slides[i].classList.remove('active');
+    slides[i].classList.toggle('prev', n>i);
+    i=n;
+    slides[i].classList.add('active');slides[i].classList.remove('prev');
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    counter.textContent=String(i+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+    progress.style.width=((i+1)/slides.length*100)+'%';
+    deck.classList.toggle('on-dark', slides[i].classList.contains('slide--dark')||slides[i].classList.contains('slide--ink2'));
+    animateSlide(slides[i]);
+  }
+  const next=()=>go(Math.min(i+1,slides.length-1));
+  const prev=()=>go(Math.max(i-1,0));
+  document.getElementById('next').addEventListener('click',next);
+  document.getElementById('prev').addEventListener('click',prev);
+  window.addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();next()}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();prev()}
+    else if(e.key==='Home')go(0); else if(e.key==='End')go(slides.length-1);
+  });
+  let x0=null;
+  deck.addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});
+  deck.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;
+    if(Math.abs(dx)>50)dx<0?next():prev();x0=null;});
+
+  const acc=document.getElementById('acc'),price=document.getElementById('price'),
+        stud=document.getElementById('stud'),sp=document.getElementById('sp');
+  const eur=n=>n>=1e6?'\u20AC'+(n/1e6).toFixed(2)+'M':n>=1e3?'\u20AC'+Math.round(n/1e3)+'k':'\u20AC'+Math.round(n);
+  function sim(){
+    const a=+acc.value,p=+price.value,s=+stud.value,spr=+sp.value;
+    const sub=a*p, studRev=a*s*spr, tot=sub+studRev;
+    document.getElementById('vAcc').textContent=a;
+    document.getElementById('vPrice').textContent=eur(p);
+    document.getElementById('vStud').textContent=s;
+    document.getElementById('vSp').textContent=eur(spr);
+    document.getElementById('total').textContent=eur(tot);
+    document.getElementById('rSub').textContent=eur(sub);
+    document.getElementById('rStud').textContent=eur(studRev);
+    document.getElementById('rContrib').textContent=eur(tot*0.6);
+  }
+  [acc,price,stud,sp].forEach(el=>el.addEventListener('input',sim));
+  document.querySelectorAll('.presets button').forEach(b=>b.addEventListener('click',()=>{
+    const p=b.dataset.p.split(',');
+    acc.value=p[0];price.value=p[1];stud.value=p[2];sp.value=p[3];sim();
+  }));
+  sim();
+
+  go(0);
+})();
+</script>
+</body>
+</html>

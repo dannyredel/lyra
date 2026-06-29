@@ -1,0 +1,52 @@
+---
+title: "Preface"
+---
+
+## Why this book exists
+
+There are good books on online experimentation and good books on causal
+inference — but they sit on opposite sides of a gap. The experimentation
+literature (Kohavi, Tang & Xu) is platform-centric but light on modern causal
+ML. The causal-inference literature (Facure, Cunningham, Chernozhukov et al.)
+is method-rich but not built around *running experiments on a platform*:
+switchback, CUPED/CUPAC, always-valid inference, metric governance, marketplace
+interference.
+
+This book is the bridge: **causal inference as practiced inside a modern
+experimentation platform.** It is organized by the *problem you face when
+running experiments*, not by method family — so each chapter opens with the
+platform problem and then reaches for whatever method solves it, whether that
+method comes from the A/B-testing tradition, the econometrics tradition, or the
+causal-ML tradition.
+
+## Two conventions, every chapter
+
+1. **The platform problem.** Each chapter starts by naming the concrete
+   experimentation problem it addresses. Methods are tools, not the subject.
+
+2. **Validate against ground truth.** Each chapter ends by recovering a *known*
+   effect from a simulated data-generating process (Vega), reporting bias and
+   coverage. This is the pedagogical move no real-data textbook can make: you
+   see the estimator hit a number we set on purpose. It is also, not by
+   coincidence, the test suite for the companion platform.
+
+## The companion platform
+
+The methods here are implemented in **Lyra** (an experimentation platform:
+assignment, event log, governed metrics, guardrails, a causal inference engine,
+a scorecard) and validated by **Vega** (the data-generating + simulation +
+Monte-Carlo harness layer). The book and the platform share a spine; Part XIV
+and Appendix A are, in effect, Lyra/Vega's documentation.
+
+## How to read it
+
+- **Practitioners** can read any Part standalone; the "platform problem" opener
+  makes each one self-contained.
+- **Learners** should read Parts I–IV in order — that is the minimum viable,
+  correctly-done experiment readout — then branch by interest.
+- All code is runnable. Python by default; R chapters declare `engine: knitr`.
+
+## Status
+
+This is a living document, written in lockstep with the platform. Chapters ship
+when their methods are built and validated, not before.

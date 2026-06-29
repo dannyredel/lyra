@@ -1,0 +1,61 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Lyra"
+  description: "User guide for Lyra — an experimentation platform where every estimator is certified against a known ground truth."
+  page-navigation: true
+  navbar:
+    background: "#0E1A2B"
+    pinned: true
+    left:
+      - text: "User Guide"
+        file: index.qmd
+      - text: "Live demo"
+        href: https://lyra-five-sable.vercel.app
+  sidebar:
+    style: "docked"
+    background: light
+    collapse-level: 2
+    contents:
+      - section: "The idea"
+        contents:
+          - index.qmd
+          - harness.qmd
+          - dgp-zoo.qmd
+      - section: "Methods"
+        contents:
+          - ate.qmd
+          - metrics.qmd
+          - cluster.qmd
+          - interference.qmd
+          - switchback.qmd
+          - sequential.qmd
+          - power.qmd
+          - cate.qmd
+          - policy.qmd
+          - observational.qmd
+          - incrementality.qmd
+      - section: "Applications"
+        contents:
+          - cases.qmd
+  page-footer:
+    left: "Lyra — a portfolio platform by [Daniel Redel](https://dannyredel.github.io/)."
+    center: "[Live demo](https://lyra-five-sable.vercel.app) · [GitHub](https://github.com/dannyredel) · [LinkedIn](https://www.linkedin.com/in/daniel-redel-14b052b6/)"
+    right: "Built with Quarto."
+
+format:
+  html:
+    theme: [cosmo, theme.scss]
+    toc: true
+    toc-depth: 3
+    toc-title: "On this page"
+    html-math-method: katex
+    code-copy: true
+    code-overflow: wrap
+    smooth-scroll: true
+    fig-cap-location: bottom
+    grid:
+      sidebar-width: 270px
+      body-width: 820px

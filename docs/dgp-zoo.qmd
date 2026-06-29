@@ -1,0 +1,153 @@
+---
+title: "The DGP zoo"
+subtitle: "Authored worlds with a known truth — from i.i.d. to a full marketplace, each with its own oracle."
+---
+
+::: {.lead}
+The harness can only certify an estimator if it knows the right truth to grade against — and every
+estimand has its *own* right truth. This chapter is the catalogue of worlds Lyra authors: a **fidelity
+ladder** that climbs from a one-line i.i.d. effect to a full marketplace, and an **outcome-type zoo** that
+swaps the response distribution while keeping the planted effect known. Each is a `DGP` — `sample` returns
+what an analyst sees, `ground_truth` returns the oracle. *(Built raw in `notebooks/02_dgp_zoo`, promoted to
+`lyra/dgp/`.)*
+:::
+
+Every world honours the same two-method contract from [the harness](harness.qmd):
+
+```python
+class DGP(Protocol):
+    name: str
+    def sample(self, n: int, seed: int): ...   # observable data only
+    def ground_truth(self) -> GroundTruth: ...  # the true ATE/ATT/CATE the estimator can't see
+```
+
+That split is the whole superpower: the estimator never sees `ground_truth`, but the harness does, so every
+chapter's recovery test grades against the *exact* number the world planted.
+
+## The fidelity ladder {#sec-ladder}
+
+The ladder (`lyra/dgp/ladder.py`, then `switchback.py`, then `engine/`) climbs one realism axis at a time —
+each rung adds a structure that breaks the previous rung's estimator, so the harness can show *which* method
+the new complication demands.
+
+### L0 — i.i.d., constant effect {#sec-l0}
+
+`DGPLevel0`: independent units, randomized treatment, one additive effect.
+
+$$
+y_i = \mu + \tau\,T_i + \varepsilon_i,\qquad \varepsilon_i \sim N(0,\sigma^2),\qquad T_i\sim\text{Bern}(\pi).
+$$
+
+The oracle is just `GroundTruth(ate=τ)`. This is the sanity rung: difference-in-means is exact and the only
+job is to confirm the harness, the CI, and the A/A null all behave. [certified]{.cert} by construction.
+
+### L1 — covariates → potential outcomes {#sec-l1}
+
+`DGPLevel1` is the workhorse. Covariates $X\in\mathbb{R}^d$ drive a baseline surface and a heterogeneous
+effect, authored directly as potential outcomes:
+
+$$
+Y_i(0) = b(X_i) + \varepsilon_i,\qquad Y_i(1) = Y_i(0) + \tau(X_i),\qquad \tau(x) = \text{ate} + \text{het}\cdot x_0 .
+$$
+
+Two knobs make this rung the robustness laboratory:
+
+- **nonlinear baseline** — `baseline(X, nonlinear=True)` swaps the linear $b(X)$ for
+  $2\sin(1.5x_0) + x_1^2 + 1.5\,x_0 x_1$, which a linear regression cannot absorb.
+- **confounding knob** — `confounding=0` ⇒ randomized ($e=0.5$); `>0` ⇒ a propensity tied to the *same* $X$,
+  $$
+  e(X) = \sigma\!\big(\gamma\, c(X)\big),\qquad c(X) = x_0 + (x_1^2 - 1),\qquad \sigma(z)=\tfrac{1}{1+e^{-z}} .
+  $$
+
+The `ground_truth` carries both the scalar `ate` and the CATE function $\tau(\cdot)$. This is precisely the
+world the [ATE](ate.qmd) chapter runs to show diff-in-means and OLS go [biased]{.bias} under nonlinear
+confounding while AIPW/DML stay [certified]{.cert}.
+
+### L2 — temporal / carryover (switchback) {#sec-l2}
+
+`SwitchbackDGP` holds a market fixed and randomizes treatment **over time** (cell = cluster × period),
+trading cross-sectional interference for temporal structure: diurnal trends, AR(1) cluster×time shocks, and
+optional **carryover** that bleeds an earlier cell's treatment into the next. The clean DGP plants
+`ground_truth().ate = τ`; the right estimator is a cluster-robust OLS clustered on the market (with CUPED on
+`x_hist`). Naive i.i.d. SEs under-cover here — the design *is* the lesson.
+
+### L3 — the marketplace {#sec-l3}
+
+The top rung is the agent-based marketplace in `engine/` (Vega Level-3): tens of thousands of reward-seeking
+agents, budgets, offers, and churn, where treatment on one offer spills onto others through shared demand and
+budget. Ground truth is recovered by the counterfactual-twin replay. This is where interference stops being a
+knob and becomes the world; the dedicated estimators live in the interference and switchback chapters.
+
+## The outcome-type zoo {#sec-outcomes}
+
+The ladder varies *structure*; the zoo (`lyra/dgp/outcomes.py`, `funnel.py`, `panel.py`) varies the
+**response distribution** while keeping treatment randomized and the effect planted. Each world authors
+potential outcomes through a nonlinear link, then computes the true ATE from *expected* potential outcomes on
+a 200k-row oracle sample — low-Monte-Carlo-noise counterfactual twins.
+
+| DGP class | outcome model | what it stresses |
+|---|---|---|
+| `BinaryDGP` | Bernoulli, logistic link | risk-difference ATE $\neq$ logit $\beta$ |
+| `CountDGP` | Poisson, log link | rate-difference vs rate-ratio $e^\beta$ |
+| `RevenueDGP` | spike-at-zero $\times$ lognormal | heavy tails → CUPED for variance |
+| `RatioDGP` | per-session conversions, random denominator | clustered / delta-method SEs |
+| `SurvivalDGP` | exponential hazard + censoring | $S(D30)$ difference; hazard ratio $e^{-\beta}$ |
+| `FunnelDGP` | composed click→convert→spend | one DGP, a true ATE per metric |
+| `StaggeredPanelDGP` | staggered-adoption panel | the **DiD exception** (see below) |
+
+The models are deliberately not Gaussian. The logistic world plants a logit shift $\beta$ but the *estimand*
+is the risk difference,
+
+$$
+\text{ATE} = \mathbb{E}\big[\sigma(a(X)+\beta) - \sigma(a(X))\big] \neq \beta,
+$$
+
+and the count world plants $\lambda = e^{a(X) + \beta T}$, so the rate **difference** $\mathbb{E}[\lambda_1 -
+\lambda_0]$ and the rate **ratio** $e^\beta$ are different numbers — both stored in the oracle's `extra`.
+
+```python
+gt = BinaryDGP(beta=0.5).ground_truth()
+gt.ate                      # risk difference, computed on 200k oracle rows
+gt.extra["logit_beta"]      # the planted β — not the ATE
+```
+
+### The throughline — type drives variance, not the point {#sec-throughline}
+
+Here is the lesson NB 02 exists to make concrete. **Under randomization, difference-in-means is unbiased for
+the ATE of *every* outcome type in the table.** Binary, Poisson, spike-at-zero revenue, ratio, survival
+indicator, funnel ARPU — plug any of them into the harness with diff-in-means and the point estimate lands on
+the planted truth. [certified]{.cert} across the board.
+
+So the outcome type does **not** change *what* you estimate — it changes the **variance and the correct
+inference**: a Bernoulli needs a proportion's SE, a Poisson is overdispersion-prone, spike-at-zero revenue is
+heavy-tailed (hence CUPED), a ratio has a random denominator (hence the delta method or clustering). That is
+exactly the motivation for a **typed metric layer** — see [metrics](metrics.qmd) — where each metric ships
+the inference its distribution demands, not a one-size Gaussian CI.
+
+### The exception that motivates DiD {#sec-panel}
+
+`StaggeredPanelDGP` is the one world where the point estimate itself breaks. Units enter treatment at
+*different* periods, with **selection on $X$** into the eventually-treated group and a **calendar trend**, so
+treated cohorts differ at baseline *and* drift over time:
+
+$$
+y_{it} = \eta_i + \text{trend}\cdot t + \text{att}\cdot \text{post}_{it} + \varepsilon_{it},\qquad
+\eta_i \text{ correlated with } X_i .
+$$
+
+With the true ATT planted at $1.00$, a naive last-period treated-minus-control difference reads
+$\approx\,$**1.84** — confounded by the baseline gap and the trend. [biased]{.bias} by 84%. Differencing out
+the unit fixed effect and the common trend (DiD) is what recovers the planted $1.00$ — the whole reason the
+DiD chapter exists. This is the only rung where you cannot get away with diff-in-means, which is precisely
+why it earns its own world.
+
+## Why this matters {#sec-why}
+
+Every world in the zoo exists to pair an estimator with the truth it is *supposed* to recover — not a
+generic ATE, but the right estimand for that world: a risk difference for binary, a rate difference for
+count, an $S(D30)$ contrast for survival, an ATT for the staggered panel. Because each `ground_truth()` is
+authored, not estimated, the [harness](harness.qmd) gates **per world**: an estimator is [certified]{.cert}
+only on the worlds whose truth it actually recovers with nominal coverage, and [biased]{.bias} — with the
+miss measured — on the worlds it cannot. The ladder tells you *which complication* you are testing against;
+the zoo tells you *which inference* the answer demands. Together they are why the green badge on the
+scorecard means something a real platform can never prove.

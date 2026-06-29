@@ -1,0 +1,76 @@
+---
+title: "Frequentist vs Bayesian: Interpreting Intervals"
+---
+
+::: {.callout-note title="The platform problem"}
+Your scorecard reports an interval, and a stakeholder reads it as "there's a 95%
+chance the true effect is in here." That reading is *wrong* for a frequentist
+confidence interval and *right* for a Bayesian credible interval. The gap is not
+pedantry — it changes how you communicate results, what decision rules are
+legitimate, and how you may stop an experiment. This chapter draws the line.
+:::
+
+## Two intervals that look identical and mean different things
+
+- **Confidence interval (frequentist).** A statement about the *procedure*: across
+  many repetitions, 95% of the intervals it generates cover the true value. It
+  says nothing about the probability that *this* interval contains $\theta$ — once
+  computed, the interval either covers $\theta$ or it doesn't.
+- **Credible interval (Bayesian).** A statement about *this* interval given a
+  prior: the posterior probability that $\theta$ lies inside is 95%. It is the
+  thing people *think* a CI is — at the cost of requiring a prior.
+
+The widespread misreading of CIs is well documented (Morey et al., *The fallacy
+of placing confidence in confidence intervals*). Naming it is part of building a
+trustworthy scorecard.
+
+## The same data, both ways
+
+```{python}
+# Worked contrast on one dataset:
+#   frequentist 95% CI  (e.g. mean ± 1.96·SE)
+#   Bayesian 95% credible interval (conjugate or sampled posterior)
+# Show numerically how/whether they coincide, and how the credible interval
+# shifts as the prior changes — the frequentist interval does not.
+```
+
+With a flat/weak prior and a large sample the two often nearly coincide, which is
+why the misinterpretation usually "works" — and why it quietly fails with small
+samples or informative priors.
+
+## Why it matters for experimentation
+
+- **Decisions.** Bayesian decision rules speak the language of business directly:
+  $P(B > A)$, expected loss, expected uplift — see the applied treatment in
+  Part IV (Bayesian A/B).
+- **Stopping & peeking.** Bayesian methods are *not* automatically immune to the
+  peeking problem (Deng et al.); naive optional stopping can still inflate error.
+  The rigorous always-valid tools — frequentist confidence sequences and e-values
+  — live in Part IV. This chapter only frames the debate; that part resolves it.
+- **Communication.** If you want to *say* "95% chance the effect is positive," you
+  owe your audience a credible interval and an explicit prior — not a relabeled CI.
+
+## When to use which
+
+A short, honest guide: frequentist CIs as the platform default (no prior to argue
+about, well-understood guarantees); Bayesian credible intervals when you have a
+defensible prior, want direct probability statements for decisions, or are pooling
+across many segments (hierarchical shrinkage, Part VI/Part IV).
+
+## Validate against ground truth (Vega)
+
+```{python}
+# The cleanest demonstration of the difference:
+#   simulate many experiments with a KNOWN θ.
+#   - frequentist 95% CI: coverage should be ≈ 0.95 regardless of θ.
+#   - Bayesian 95% credible interval: coverage depends on whether the prior
+#     matches the θ-generating process — well-calibrated under a matched prior,
+#     biased under a mismatched one.
+# Seeing coverage move with the prior makes the interpretation gap concrete.
+```
+
+## Further reading
+
+*Anchors: Morey et al. on CI misinterpretation; Deng et al. on Bayesian peeking;
+@howard2021confidence for the always-valid frequentist route. Pull more from the
+paper-library; cite with [@key].*

@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: mart_experiment_readout
+    description: Per (experiment, arm) summary — n_users, mean/total outcome, conversions, variance.
+    columns:
+      - name: experiment_id
+        data_tests: [not_null]
+      - name: arm
+        data_tests:
+          - not_null
+          - accepted_values: { values: [control, treatment, holdout] }
+      - name: n_users
+        data_tests: [not_null]
+
+  - name: mart_experiment_effects
+    description: >
+      The naive treatment effect (difference in means) with Welch SE + 95% CI, computed in SQL.
+      Same quantity as inference/naive.py; the interference-aware corrections stay in Python.
+    columns:
+      - name: experiment_id
+        data_tests: [not_null, unique]
+      - name: effect
+        data_tests: [not_null]
+      - name: n_t
+        data_tests: [not_null]
+      - name: n_c
+        data_tests: [not_null]
+
+  - name: mart_srm
+    description: Sample Ratio Mismatch guardrail — realized vs intended arm share, chi-square, flag.
+    columns:
+      - name: experiment_id
+        data_tests: [not_null, unique]
+      - name: realized_share
+        data_tests: [not_null]
+      - name: srm_ok
+        description: Constant-allocation experiments must pass; ramped/cluster are informational.
+        data_tests: [not_null]

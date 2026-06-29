@@ -1,0 +1,176 @@
+---
+title: "Switchback & variance reduction"
+subtitle: "Randomize over time within one market when the unit can't be split — then claw the variance back."
+---
+
+::: {.lead}
+When the unit of business is a *market* — a delivery zone, a city, a shared pool of couriers — a user-level
+A/B test is biased by interference and a two-market test has $n\approx2$. The switchback sidesteps both: hold
+the market fixed and **randomize the treatment over time**. This chapter walks the design, the *structural*
+power floor that no amount of data dissolves, and the variance-reduction ladder (CUPED → CUPAC → DML-DR) that
+buys the power back — plus the trap where buying too much flips the sign.
+*(Recycled from `papers/switchback-and-variance-reduction.md`.)*
+:::
+
+## The problem: temporal interference {#sec-problem}
+
+On a marketplace the unit of interest is a **cross-sectional entity observed over time**. A user-level test
+there fails SUTVA: a pricing or dispatch change moves *shared* supply, so a treated user's outcome depends on
+how many others are treated (see [interference](interference.qmd)). Randomizing one whole market per arm
+escapes that — at a sample size of two.
+
+A **switchback** holds the market fixed and flips treatment on and off across successive periods, so the
+*same* market is its own treatment and control. The unit of randomization is a **cell** = cluster × time
+period, $T_{cl,t}\sim\text{Bern}(\tfrac12)$, and observations live inside cells. Both arms realize within one
+market, so cross-sectional equilibrium effects largely cancel. The estimand stays the average effect, now
+over cells,
+
+$$
+\tau \;=\; \mathbb{E}\!\left[\,Y_{cl,t}(1) - Y_{cl,t}(0)\,\right],
+$$
+
+but you have traded *cross-sectional* interference for *temporal* hazards — carryover and autocorrelation —
+on a finite, lumpy grid of cells.
+
+## The design: cells, carryover, the imbalance penalty {#sec-design}
+
+Model a cell's outcome as multi-level shocks plus treatment and SUTVA violations:
+
+$$
+Y_{i,cl,t} \;=\; \underbrace{\mu + \alpha_{cl} + \gamma_t + \delta_{cl,t}}_{\text{untreated}}
+\;+\; \tau_{cl}\,T_{cl,t}
+\;+\; \underbrace{\text{carryover}_{cl,t}}_{\text{temporal SUTVA}}
+\;+\; \varepsilon_{i,cl,t},
+$$
+
+with $\alpha_{cl}$ the **cluster** (geozone) shock, $\gamma_t$ the **time** (diurnal) shock, $\delta_{cl,t}$
+the autocorrelated **cluster×time** interaction, and $\varepsilon$ idiosyncratic **residual** noise.
+**Carryover** of order $m$ bleeds past treatment into the present,
+
+$$
+\text{carryover}_{cl,t} \;=\; \sum_{k=1}^{m} w_k\,\rho_{co}\,\tau_{cl}\,\big(T_{cl,t-k}-T_{cl,t}\big),
+$$
+
+and biases naive difference-in-means. The design lever (Bojinov–Simchi-Levi–Zhao 2021) is the randomization
+grid: longer periods cut carryover contamination but yield fewer independent cells, so less power — discard or
+model the first $m$ post-switch periods to compare clean cells.
+
+Define $\sigma^2_{total}=\sigma^2_{cl}+\sigma^2_{time}+\sigma^2_{int}+\sigma^2_{res}$, variance shares
+$S_k=\sigma^2_k/\sigma^2_{total}$, and the **macro share** $S_{macro}=S_{cl}+S_{time}+S_{int}$ — the part of
+the noise that lives *above* the individual. Real markets have wildly uneven cells, and that imbalance shows
+up as the modern Moulton factor $(1+cv^2)$, with $cv$ the coefficient of variation of cell sizes: large,
+volatile cells dominate the denominator as treatment reshuffles. Stratification tames the cluster and time
+penalties but leaves $S_{int}$ fully exposed — a hard ceiling on design tricks.
+
+## The structural power floor {#sec-floor}
+
+Delta-linearizing the individual-level OLS estimator gives Pankratev's (2026) closed-form variance — the
+first such formula for switchbacks:
+
+$$
+\operatorname{Var}(\hat\tau)\;\approx\;\frac{4\,\sigma^2_{total}}{J\,H}
+\left[\;\frac{S_{res}}{\bar n}
+\;+\; S_{macro}\Big(\tfrac{1}{\bar n} + 1 + cv^2\Big)\right],
+$$
+
+with $J$ clusters, $H$ periods, $\bar n$ the mean cell size. The whole moral lives in the two brackets:
+
+- The **residual** share is divided by $\bar n$ — pack more observations into a cell and idiosyncratic noise
+  averages away, exactly as sampling theory predicts.
+- The **macro** share carries a $+1$ that does **not** vanish with $\bar n$. **Macro shocks do not average
+  away.** However dense the data, variance hits a structural floor $\propto S_{macro}(1+cv^2)$.
+
+So adding observations *within* cells has rapidly diminishing returns: to move the floor you need more
+**cells** ($J\!\cdot\!H$) or a smaller $S_{macro}$. This is why the floor persists across average cluster
+size $\bar n$ in the certification sweep below — the curve flattens, it does not descend to zero.
+
+## The variance-reduction ladder {#sec-ladder}
+
+Power is bought by shrinking variance, and covariate adjustment is the cheapest lever. Each rung uses a
+*pre-treatment* covariate $X$, so the effect is unchanged and only the variance moves.
+
+### CUPED {#sec-cuped}
+
+Controlled-experiment Using Pre-Experiment Data (Deng et al. 2013) — adjust the outcome by a single
+pre-treatment covariate (e.g. the cell's historical baseline):
+
+$$
+\tilde Y \;=\; Y - \theta\,(X-\bar X),\qquad
+\theta=\frac{\operatorname{Cov}(Y,X)}{\operatorname{Var}(X)}.
+$$
+
+Because $X$ is pre-treatment, $\mathbb{E}[\tilde Y]$ is unchanged but the variance drops by the
+**variance-reduction fraction**
+
+$$
+\text{VR} \;=\; 1 - \frac{\operatorname{Var}(\tilde Y)}{\operatorname{Var}(Y)} \;=\; \rho^2,
+\qquad \rho=\operatorname{Corr}(Y,X).
+$$
+
+Free power, never worse than raw — the linear special case of regression adjustment (see
+[metrics & CUPED](metrics.qmd)).
+
+### CUPAC {#sec-cupac}
+
+Control Using Predictions As Covariates (DoorDash) — swap the single historical mean for a machine-learning
+prediction $\hat g(\text{features})$ as the CUPED covariate. A flexible model raises $\rho$, so more VR.
+
+### DML-DR {#sec-dmldr}
+
+The cross-fitted AIPW score with the known propensity $e=\tfrac12$ — the most aggressive rung,
+Neyman-orthogonal and so robust to a wrong outcome model:
+
+$$
+\hat\tau_{DR}=\frac1n\sum_i\Big[\hat\mu_1(X_i)-\hat\mu_0(X_i)
++\tfrac{T_i}{e}\big(Y_i-\hat\mu_1\big)-\tfrac{1-T_i}{1-e}\big(Y_i-\hat\mu_0\big)\Big].
+$$
+
+```python
+from lyra.dgp import SwitchbackDGP
+from lyra.estimators_vr import Raw, CUPED, CUPAC, DMLDR
+from lyra.harness import harness
+
+dgp = SwitchbackDGP(J=60, H=24, s_macro=0.20, cv=1.0, carryover=0.0)
+for est in (Raw(), CUPED(target="macro"), CUPAC(), DMLDR()):
+    print(est.name, harness(est, dgp, R=200))
+```
+
+::: {.callout-warning appearance="simple"}
+**The efficiency↔robustness trap (Type-S).** Every VR rung assumes the covariate model is right. Carryover
+biases *all* methods equally — but VR shrinks the CI around the **biased** point, turning a biased estimate
+into a *confident* error. Under **sign-flip carryover** the aggressive rungs (DML-DR) produce far more
+wrong-sign **Type-S rejections**: significant in the wrong direction. The cure for over-precision under
+interference is to climb the ladder only as far as SUTVA can be trusted — CUPAC, not DML-DR, when carryover
+is in doubt.
+:::
+
+## Certification {#sec-certify}
+
+Run the ladder through [the harness](harness.qmd) on `SwitchbackDGP` (DoorDash-calibrated:
+$S_{macro}\!\approx\!0.20$, residual 80%). The variance-reduction gradient is clean and *measured*:
+
+| estimator | variance reduction | reads |
+|---|---|---|
+| Raw (diff-in-means) | 0% | baseline |
+| **CUPED** | 45% | [certified]{.cert} |
+| **CUPAC** | 67% | [certified]{.cert} |
+| **DML-DR** | 61% | [certified]{.cert} (SUTVA-gated) |
+
+Each cuts variance without moving the point — [certified]{.cert} as long as the covariate is pre-treatment.
+
+**The structural inversion.** *Where* you spend the model matters more than how flexible it is. A CUPED
+adjustment that targets the **macro** shock reaches **58% VR**; the same machinery aimed at the **residual**
+only reaches **17%** — even though residual is the *larger* (80%) share. The floor formula says why: residual
+is already suppressed by $1/\bar n$ while macro is amplified by $1+cv^2$, so halving the small macro share
+beats halving the large residual share by an order of magnitude. **Target macro, not residual.** A switchback
+CUPAC model must predict spatial/temporal features, not individual behaviour.
+
+The power floor persists across average cluster size $\bar n$: the harness sweep shows variance flattening
+onto $S_{macro}(1+cv^2)$ rather than falling to zero, the empirical signature of the $+1$ term.
+
+And the trap is real and asserted. Inject **sign-flip carryover** and the aggressive rung's reject-rate
+splits in the *wrong* direction: DML-DR's confident intervals trap the wrong sign — a [biased]{.bias} Type-S
+failure that Raw, with its wider CI, mostly avoids. The harness records both the VR gain *and* the Type-S
+rate, so the scorecard certifies precision and robustness as a pair, never one alone. Goldilocks for a
+switchback where SUTVA cannot be guaranteed: **CUPAC** — most of DML-DR's gain, robust calibration, no
+propensity overfitting.

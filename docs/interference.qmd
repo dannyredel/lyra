@@ -1,0 +1,137 @@
+---
+title: "Interference & designs"
+subtitle: "When one unit's treatment spills onto another, the naive estimate is biased and the design must change."
+---
+
+::: {.lead}
+SUTVA is the quiet assumption under every A/B test: my outcome depends only on my own treatment. In a
+shared-resource marketplace it is false — a treated user who claims more reward drains a budget pool the
+control users compete for. This chapter tames that with **exposure mappings**, names the estimands it
+splits the effect into, and shows the two design fixes — **cluster randomization** and **budget-split** —
+that the harness certifies. *(Math recycled from `notation/interference.md`, after Wager ch. 11–12.)*
+:::
+
+## The problem: SUTVA breaks under a shared pool {#sec-problem}
+
+The estimator ladder of the [ATE chapter](ate.qmd) opens with **SUTVA** — $Y_i = Y_i(W_i)$, no interference,
+one version of treatment. Drop it and the bookkeeping explodes: each unit has up to $2^n$ potential
+outcomes $Y_i(\mathbf w)$, one per global assignment $\mathbf w\in\{0,1\}^n$, not two.
+
+$$
+Y_i = Y_i(\mathbf w), \qquad \mathbf w\in\{0,1\}^n,
+$$
+
+In Vega's rewarded-UA market the channel is concrete: a **shared budget and attention pool**. Bump the
+reward for treated users (Game A) and they convert harder — but every claimed reward decrements the *same*
+advertiser budget that funds the control arm. Treatment doesn't just lift the treated; it **cannibalizes**
+the control. The control group is no longer a clean counterfactual for "no treatment" — it is the
+counterfactual for "no treatment, *and starved of budget by the treated arm*." The contrast is contaminated
+at the source, and no estimator reading the [event log](harness.qmd) can wash it out, because the bias is in
+the data, not the analysis.
+
+## Exposure mappings & the estimands {#sec-exposure}
+
+The fix for $2^n$ outcomes is structure. An **exposure mapping** $H_i:\{0,1\}^n\to\mathcal H$ summarizes how
+the whole assignment $\mathbf w$ reaches unit $i$, collapsing the exponential blowup to a handful of
+**exposure conditions**:
+
+$$
+Y_i(\mathbf w)=Y_i(\mathbf w')\quad\text{whenever}\quad H_i(\mathbf w)=H_i(\mathbf w').
+$$
+
+This induces a **ladder** of nested assumptions, from most to least restrictive — $H_1$ is plain SUTVA, and
+the marketplace lives well above it:
+
+$$
+H_1\ (\text{SUTVA})\ \subset\ H_2\ (\text{anonymous: } w_i,\ \text{frac. treated})\ \subset\ H_3\ (\text{network})\ \subset\ H_4\ (\text{generic}).
+$$
+
+Once exposure is named, the single ATE splits into **exposure effects** — the average outcome gap between
+two exposure conditions $h,h'\in\mathcal H$:
+
+$$
+\bar\tau(h,h')=\frac1n\sum_{i=1}^n\big(Y_i(h')-Y_i(h)\big).
+$$
+
+Two exposure-free siblings carve the marketplace cleanly. The **average direct effect** holds everyone
+else's assignment fixed and flips only unit $i$; the **average indirect (spillover) effect** flips $i$ and
+sums the leakage onto every *other* unit $j$:
+
+$$
+\tau_{ADE}=\tfrac1n\sum_i \mathbb{E}_W\!\big[Y_i(1,\mathbf W_{-i})-Y_i(0,\mathbf W_{-i})\big],
+$$
+$$
+\tau_{AIE}=\tfrac1n\sum_i\sum_{j\neq i}\mathbb{E}_W\!\big[Y_j(W_i{=}1,\mathbf W_{-i})-Y_j(W_i{=}0,\mathbf W_{-i})\big].
+$$
+
+The **total (global) effect** is what the business actually ships — roll the whole market from all-control to
+all-treated — and it is direct **plus** indirect:
+
+$$
+\tau_{\text{TOT}} = \tau_{ADE} + \tau_{AIE}.
+$$
+
+The naive user-randomized A/B silently reports a contrast that is *neither* — it estimates the direct effect
+**net of the cannibalization it caused**, which is why its point estimate can look right while its meaning is
+wrong.
+
+::: {.callout-warning appearance="simple"}
+**The naive-decay money shot.** Under a shared budget the bias of the user-randomized estimate is not a fixed
+nuisance — it **grows with the treatment allocation** $\pi$. At a tiny pilot share the cannibalization is
+negligible and the estimate looks honest; ramp $\pi$ toward 50/50 and the control arm is starved in
+proportion, so $\widehat\tau_{\text{naive}}(\pi)$ drifts away from $\tau_{\text{TOT}}$ exactly as the design
+scales. An estimate that is "fine in the pilot" and wrong at launch is the signature of interference, and the
+[ramp diagnostic](harness.qmd) is built to catch the slope.
+:::
+
+## Design fixes: cluster & budget-split {#sec-designs}
+
+Interference can't be estimated away after the fact — it must be **designed** away by aligning the
+randomization unit with the exposure mapping.
+
+**Cluster randomization.** If spillover is confined *within* clusters and never crosses them,
+$H_i(\mathbf w)=(w_j)_{j\in C_i}$, then SUTVA holds at the **cluster level**. Randomize whole clusters,
+aggregate to one outcome per cluster, and analyze normally. The price is variance: inference now keys off the
+**randomization dependency graph** $G_{ij}=\mathbb 1\{(\{i\}\cup N_i)\cap(\{j\}\cup N_j)\neq\varnothing\}$,
+and the correct variance is the HAC/cluster-robust form
+
+$$
+\hat\sigma^2(h,h')=\tfrac1n\big(\Gamma(h')\odot\mathbf Y-\Gamma(h)\odot\mathbf Y\big)^\top G\big(\Gamma(h')\odot\mathbf Y-\Gamma(h)\odot\mathbf Y\big).
+$$
+
+When $G$ is **block-diagonal** (true clusters), this is *exactly* the cluster-robust variance estimator — so
+[cluster-robust SEs](cluster.qmd) are the finite-population-correct object, not an IID heuristic bolted on.
+
+```python
+class InterferenceDGP(DGP):
+    """Shared-budget marketplace; budget pool couples treated and control."""
+    name = "interference"
+    def sample(self, n, seed): ...          # event log; control starved by treated
+    def ground_truth(self): ...             # true total effect ~ +0.078
+```
+
+**Budget-split.** The sharper fix isolates the budget itself: partition the shared pool so the treated arm
+draws only from *its* slice and the control arm from *its* slice. With the resource decoupled there is no
+cannibalization channel left, and the contrast is clean again. In the **single-advertiser isolated regime** —
+one budget, split exactly in two — budget-split recovers the ATE **exactly**, because the design restores the
+very SUTVA the marketplace broke.
+
+## Certification {#sec-certify}
+
+Plant a true total effect $\approx +0.078$ in `InterferenceDGP`, then run [the harness](harness.qmd) on each
+design across $R$ replications. The verdict is the chapter in one table — same planted truth, same loop, only
+the **design** changes:
+
+| design | reads | bias | coverage | verdict |
+|---|---|---|---|---|
+| **naive** (user-randomized) | $\approx +0.078$ | grows with allocation $\pi$ | $\approx 0\%$ | [uncertified]{.bias} |
+| **cluster-safe / budget-split** | $\approx +0.078$ | $\approx 0$ | $\approx 97\%$ | [certified]{.cert} |
+
+This is **the interference money shot**: the naive estimate's point value *looks* correct — it lands on
+$+0.078$ — yet its intervals trap the truth essentially **never** ($\approx 0\%$ coverage), because that
+number is an artifact of cannibalization whose bias scales with $\pi$, not a recovery of $\tau_{\text{TOT}}$.
+The cluster-safe / budget-split design recovers the same $+0.078$ with **$\approx 97\%$ coverage** — and in
+the single-advertiser isolated regime, budget-split nails the ATE exactly. A right-looking point estimate is
+not certification; only coverage on the world that generated the data is. The naive design is [biased]{.bias}
+by construction; the redesigned experiment is [certified]{.cert} because it removes the spillover instead of
+hoping the analysis can.

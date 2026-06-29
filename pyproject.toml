@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vega"
+version = "0.1.0"
+description = "Ground-truth two-sided-marketplace simulator + causal experimentation system"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Daniel" }]
+
+# Engine + inference deps. dbt lives in its own optional group (heavier, pins resolver).
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyarrow>=14",        # parquet event log
+    "scipy>=1.11",        # CIs, distributions
+    "pyyaml>=6",          # config.yaml
+    "duckdb>=0.10",       # local warehouse + ad-hoc reads of the event log
+]
+
+[project.optional-dependencies]
+dbt = ["dbt-core>=1.7", "dbt-duckdb>=1.7"]
+hte = ["scikit-learn>=1.4", "econml>=0.15"]   # Phase 2 ranking/HTE leg
+papers = ["pymupdf4llm>=0.0.17", "pymupdf>=1.24"]  # scripts/pdf_to_md.py (read text, not page images)
+notebooks = ["jupytext>=1.16", "matplotlib>=3.8", "nbconvert>=7", "ipykernel>=6"]  # lab notebooks (read/explain layer over the library)
+dev = ["pytest>=8", "pytest-cov>=4", "ruff>=0.5"]
+
+[project.scripts]
+vega = "cli:main"
+
+[tool.setuptools]
+py-modules = ["cli"]
+packages = ["chassis", "engine", "inference", "lyra", "lyra.dgp", "serving", "validation"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

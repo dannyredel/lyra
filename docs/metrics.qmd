@@ -1,0 +1,180 @@
+---
+title: "Metrics & variance"
+subtitle: "The metric type drives the variance, not the point estimate — CUPED, the delta method, and the A/A promotion gate."
+---
+
+::: {.lead}
+Under randomization, difference-in-means recovers the ATE for *every* outcome type — binary, count, revenue,
+ratio. So the choice of metric is not a choice of point estimator; it is a choice of **variance**. This chapter
+walks the type→variance map, shows why a ratio metric's random denominator breaks the naive standard error,
+banks the CUPED variance reduction, and turns the A/A test into the gate a metric must pass before it ships.
+*(Math recycled from `notation/{power-mde,ate-estimators}.md`.)*
+:::
+
+## The throughline: one point estimator, many variances {#sec-throughline}
+
+Fix a binary assignment $W\in\{0,1\}$ at known share $\pi$ and an outcome $Y$ of *any* type. The
+difference-in-means
+
+$$
+\hat\tau_{\text{DM}}=\frac1{n_1}\sum_{W_i=1}Y_i-\frac1{n_0}\sum_{W_i=0}Y_i
+$$
+
+is unbiased for $\tau=\mathbb{E}[Y(1)-Y(0)]$ under randomization *regardless* of whether $Y$ is a click ($\{0,1\}$),
+a session count ($\mathbb N$), revenue ($\mathbb R_{\ge0}$), or a per-user ratio. Randomization, not distributional
+shape, is what licenses the point estimate. What the type changes is the **sampling variance** of that estimate —
+the second moment that sets the interval, the power, and therefore the decision. A governed metric layer is
+therefore a *variance* layer: it stores, per metric, how to compute $\widehat{\operatorname{Var}}(\hat\tau)$
+correctly, and grades that recipe against ground truth.
+
+## Type → variance {#sec-type-variance}
+
+**Proportion (z-test).** For a binary metric the within-group variance is fixed by the mean,
+$\sigma^2=p(1-p)$, so the two-sample variance specialises to
+
+$$
+V_{\text{prop}}=\frac{p_1(1-p_1)}{n_1}+\frac{p_0(1-p_0)}{n_0},
+\qquad
+\hat\tau\pm z_{1-\alpha/2}\sqrt{V_{\text{prop}}}.
+$$
+
+**Count / revenue.** Same $V_{\text{DM}}=\operatorname{Var}[Y(1)]/\pi+\operatorname{Var}[Y(0)]/(1-\pi)$ as
+diff-in-means, estimated from the per-arm sample variances — heavy right tails just inflate $\operatorname{Var}[Y]$,
+they do not bias $\hat\tau$.
+
+**Ratio (the trap).** Many real OECs are ratios — CTR = clicks/impressions, revenue-per-session,
+margin-per-active-user — where *both* numerator and denominator are random and the unit of analysis (user)
+differs from the unit of the metric (event). The estimand is
+
+$$
+\theta=\frac{\mathbb{E}[N]}{\mathbb{E}[D]},
+$$
+
+a smooth function of two means, so its variance follows from the **delta method**. With per-user pairs
+$(N_i,D_i)$, gradient $\nabla g=\big(1/\bar D,\,-\bar N/\bar D^2\big)$ and the $2\times2$ sample covariance
+$\hat\Sigma$ of $(N,D)$, the sandwich form is
+
+$$
+\widehat{\operatorname{Var}}(\hat\theta)
+=\frac1n\,\nabla g^\top \hat\Sigma\, \nabla g
+=\frac1n\,\frac{1}{\bar D^2}\Big(\widehat{\operatorname{Var}}(N)
+-2\hat\theta\,\widehat{\operatorname{Cov}}(N,D)
++\hat\theta^2\,\widehat{\operatorname{Var}}(D)\Big).
+$$
+
+The $-2\hat\theta\,\widehat{\operatorname{Cov}}(N,D)$ cross-term is the whole point: numerator and denominator
+move together (a user with more impressions tends to have more clicks), and ignoring that correlation gets the
+variance — and hence the power and the false-positive rate — wrong.
+
+::: {.callout-warning appearance="simple"}
+**Fixing the denominator understates the variance.** Treating $\bar D$ as a known constant and computing a
+per-unit variance on $N/\bar D$ drops the $\widehat{\operatorname{Var}}(D)$ and $\widehat{\operatorname{Cov}}(N,D)$
+terms, and conflates the event-level $n$ with the user-level $n$. Because the denominator *is* random when you
+randomize by user and analyse by event, this is not conservative — it typically **shrinks** the interval and
+inflates type-I error. The delta-method variance (equivalently Fieller's interval) is the [certified]{.cert}
+recipe; the fixed-denominator per-event SE is [biased]{.bias}.
+:::
+
+```python
+def ratio_metric_var(N, D):           # delta method, per Deng-Knoblich-Lu 2018
+    theta = N.mean() / D.mean()
+    Sigma = np.cov(N, D)              # 2x2 sample covariance of (N, D)
+    grad  = np.array([1/D.mean(), -N.mean()/D.mean()**2])
+    return (grad @ Sigma @ grad) / len(N)
+```
+
+## CUPED: variance reduction without bias {#sec-cuped}
+
+A pre-experiment covariate $X$ correlated with $Y$ (canonically the user's *pre-period* value of the same metric)
+buys power for free. CUPED replaces $Y$ with the residualised outcome
+
+$$
+\tilde Y = Y - \theta\,(X-\bar X),
+\qquad
+\theta=\frac{\operatorname{Cov}(Y,X)}{\operatorname{Var}(X)}.
+$$
+
+Subtracting a *pre-treatment* quantity (mean $\bar X$ equal across arms by randomization) leaves the estimate
+**unbiased**, $\mathbb{E}[\tilde Y(1)-\tilde Y(0)]=\tau$, while the variance falls by exactly the squared
+correlation:
+
+$$
+\operatorname{Var}(\tilde Y)=\operatorname{Var}(Y)\,(1-\rho^2),
+\qquad
+\rho=\operatorname{Corr}(Y,X).
+$$
+
+This is the same object as the interacted-regression adjustment of the [ATE chapter](ate.qmd)
+($V_{\text{IREG}}=V_{\text{DM}}-\lVert\beta^{*}_{(0)}+\beta^{*}_{(1)}\rVert_A^2\le V_{\text{DM}}$): regress on
+pre-treatment covariates, lose nothing in expectation, gain $1-\rho^2$ in variance. A metric with $\rho=0.7$ keeps
+its point estimate and halves its variance — equivalently buys back $\sim$2$\times$ the sample (see
+[power & decisions](power.qmd)).
+
+```python
+def cuped(Y, W, X):                   # X is a PRE-period covariate
+    theta = np.cov(Y, X)[0, 1] / X.var()
+    Yt    = Y - theta * (X - X.mean())
+    return diff_in_means(Yt, W)       # same estimand, strictly tighter CI
+```
+
+## Governed metrics: the MetricSpec {#sec-metricspec}
+
+Each metric is a **versioned, governed** object — not a SQL snippet copy-pasted per analysis. A `MetricSpec`
+pins the numerator/denominator (so the type, and therefore the variance recipe, is explicit), the variance
+estimator, the optional CUPED covariate, and a `version`. Changing a definition mints a new version; results
+carry the version they were computed under, so a metric can never silently drift.
+
+```python
+@dataclass(frozen=True)
+class MetricSpec:
+    name: str
+    kind: str                 # "proportion" | "mean" | "ratio"
+    numerator: str
+    denominator: str | None   # None except for ratio metrics
+    variance: str             # "binomial" | "plug_in" | "delta"  -> picks the SE recipe
+    cuped_covariate: str | None
+    version: int
+```
+
+The `kind`/`variance` fields are what make the layer *governed*: a `"ratio"` metric is forced onto the
+delta-method SE, closing the fixed-denominator trap by construction rather than by reviewer vigilance.
+
+## The A/A test is the promotion gate {#sec-aagate}
+
+A `MetricSpec` does not promote on the strength of its definition; it promotes by passing an **A/A test**. Split
+a single population at random, assign no treatment, and run the metric through the harness with $\tau=0$ planted.
+The variance recipe is correct iff the A/A is **null at the right size**:
+
+$$
+\widehat{\text{reject}}\;=\;\frac1R\sum_r \mathbb{1}\{0\notin\widehat{\mathrm{CI}}_r\}\;\approx\;\alpha,
+\qquad
+\widehat{\text{coverage}}\;\approx\;1-\alpha.
+$$
+
+A metric whose A/A rejects *more* than $\alpha$ has an understated variance (the classic ratio-denominator bug);
+one that rejects *less* is over-conservative and silently burns power. Both fail the gate. This is the metric-layer
+analogue of the coverage check that certifies an estimator in [the harness](harness.qmd) — same loop, sliced for
+$\tau=0$.
+
+## Certification {#sec-certify}
+
+Promoted to `lyra/metrics.py` from notebook **NB 03**, each recipe is graded against the simulator's known truth:
+
+| metric · recipe | A/A reject @ $\alpha{=}0.05$ | bias | reads |
+|---|---|---|---|
+| proportion · $p(1-p)$ z-test | $\approx 0.05$ | $\approx 0$ | [certified]{.cert} |
+| revenue · plug-in $V_{\text{DM}}$ | $\approx 0.05$ | $\approx 0$ | [certified]{.cert} |
+| ratio · **delta method** | $\approx 0.05$ | $\approx 0$ | [certified]{.cert} |
+| ratio · **fixed denominator** | $\approx 0.11$ — over-rejects | $\approx 0$ | [biased]{.bias} |
+| any metric · **+ CUPED** | $\approx 0.05$, **SE strictly $<$ naive** | $\approx 0$ | [certified]{.cert} |
+
+Two verdicts carry the chapter. First, **CUPED is unambiguously certified**: same (unbiased) point estimate, and
+when the pre-period covariate is informative ($\rho\neq0$) its standard error is *strictly* smaller than the naive
+SE — tighter intervals at no inferential cost. Second, the **fixed-denominator ratio SE is biased**: its point
+estimate is fine, but its A/A over-rejects, so it fails the promotion gate while the delta-method recipe sails
+through. The point estimate was never the issue. The variance was — which is exactly what a governed metric layer
+exists to get right.
+
+Adjacent reading: the same variance-reduction lever under interference appears in
+[switchback & VR](switchback.qmd); the power consequences of a tighter SE are quantified in
+[power & decisions](power.qmd).

@@ -1,0 +1,168 @@
+---
+title: "Conditional average treatment effects"
+subtitle: "The ATE is one number; it hides who is helped and who is harmed."
+---
+
+::: {.lead}
+A "winning" A/B test reports a positive average — and quietly averages over users it *hurt*. This chapter
+moves from the [ATE](ate.qmd) to the **CATE surface** $\tau(x)$: the metalearners (S/T/X), the R-learner's
+Robinson residualization, and the causal forest as a forest-localized R-learner with honest pointwise
+intervals. Because Lyra's DGP *sets* the surface, we grade each estimator on RMSE against the true $\tau(x)$
+*and* check that its intervals cover — a thing no real platform can do. *(Math recycled from
+`notation/{hte,metalearners,causal-forests}.md`, after Künzel et al. 2019, Nie–Wager 2021, and
+Athey–Tibshirani–Wager 2019.)*
+:::
+
+## The estimand & why the ATE hides harm {#sec-estimand}
+
+With treatment $W\in\{0,1\}$, covariates $X$, and potential outcomes $Y(1),Y(0)$, the conditional average
+treatment effect is
+
+$$
+\tau(x)=\mathbb{E}\!\left[Y_i(1)-Y_i(0)\mid X_i=x\right]=\mu_{(1)}(x)-\mu_{(0)}(x),
+\qquad \mu_{(w)}(x)=\mathbb{E}[Y\mid X=x,\,W=w].
+$$
+
+Under unconfoundedness $\tau(x)$ is **point-identified** — unlike the unit-level effect $\Delta_i=Y_i(1)-Y_i(0)$,
+which is never observed. The ATE is just its average, $\tau=\mathbb{E}[\tau(X)]$. That averaging is the trap: a
+ship-decision that reads $\tau=+0.52$ is fully consistent with a surface that runs from deeply negative to
+strongly positive. In Lyra's hetero world the ATE is **+0.52** while $\tau(x)$ ranges **$-3.4$ to $+4.9$** —
+roughly **a third of users are harmed** by the very arm the A/B "won." The point estimate is not wrong; it is
+answering the wrong question. The remedy is to estimate the whole surface, then **target**: ship to
+$\{x:\tau(x)>C\}$, the welfare-optimal threshold rule (→ [policy & OPE](policy.qmd)).
+
+## Metalearners — S, T, X {#sec-meta}
+
+A **metalearner** re-purposes any predictive base learner into a CATE estimator. Three rungs, in order of how
+hard they try to avoid baking the wrong structure in.
+
+**S-learner** fits one model on pooled data with $W$ as a feature, $\hat\mu(x,w)$, and reads off
+$\hat\tau_S(x)=\hat\mu(x,1)-\hat\mu(x,0)$. It pools all data and shrinks toward $\tau=0$ — *good* when the
+effect is small, but regularization can shrink $W$'s influence to nothing and bias the surface
+[toward "no effect"]{.bias}. **T-learner** fits each arm separately and differences,
+
+$$
+\hat\tau_T(x)=\hat\mu_{(1)}(x)-\hat\mu_{(0)}(x).
+$$
+
+Its pitfall is **regularization-induced confounding**: the two arms are regularized *differently* (worse when
+arms are unbalanced or have different complexity), so the difference **invents heterogeneity** that isn't
+there — a [biased]{.bias} surface even when each arm is individually fine.
+
+**X-learner** (Künzel et al. 2019) is built for unbalanced arms — exactly the early-ramp regime where the
+treated share is small. It runs in two stages plus a weighted blend:
+
+```python
+# stage 0: fit the two arm models (as in T-learner)  -> mu0_hat, mu1_hat
+# stage 1: impute each unit's effect against the OTHER arm's model
+D1 = Y[treated]  - mu0_hat(X[treated])     # treated:  Y - mu0(X)
+D0 = mu1_hat(X[control]) - Y[control]      # control:  mu1(X) - Y
+# stage 2: regress the imputed effects on X within each arm -> tau1, tau0
+# blend by a weight g(x) (commonly the propensity e(x)):
+tau_X = g(X) * tau0(X) + (1 - g(X)) * tau1(X)
+```
+
+In symbols, the imputed pseudo-effects and the blend are
+
+$$
+\tilde D_i^{1}=Y_i-\hat\mu_{(0)}(X_i)\ \ (\text{treated}),\qquad
+\tilde D_i^{0}=\hat\mu_{(1)}(X_i)-Y_i\ \ (\text{controls}),
+$$
+$$
+\hat\tau_X(x)=g(x)\,\hat\tau_0(x)+\bigl(1-g(x)\bigr)\,\hat\tau_1(x),\qquad g(x)\in[0,1]\ (\text{usually }\hat e(x)).
+$$
+
+The weight $g=\hat e$ leans on the **data-rich** side: where treated units are scarce, trust $\hat\tau_0$ from
+the abundant controls, and vice versa. This is why X is the right default under ramps.
+
+## The R-learner — Robinson residualization {#sec-rlearner}
+
+The metalearners above plug into outcome models directly; the R-learner instead **orthogonalizes** first.
+Center $Y$ on its marginal mean $\ell(x)=\mathbb{E}[Y\mid X=x]$ and $W$ on the propensity $e(x)$. Robinson's
+decomposition is then exact:
+
+$$
+Y_i-\ell(X_i)=\bigl(W_i-e(X_i)\bigr)\,\tau(X_i)+\varepsilon_i,
+\qquad \mathbb{E}[\varepsilon_i\mid X_i,W_i]=0.
+$$
+
+Cross-fit the two nuisances $\hat\ell,\hat e$ on held-out folds, then minimize the **R-loss** — a weighted
+least-squares of the residual outcome on the residual treatment:
+
+$$
+\hat\tau=\arg\min_\tau\frac1n\sum_i\Bigl(\bigl(Y_i-\hat\ell^{(-k)}(X_i)\bigr)
+-\bigl(W_i-\hat e^{(-k)}(X_i)\bigr)\,\tau(X_i)\Bigr)^2+\Lambda(\tau).
+$$
+
+The R-loss is **Neyman-orthogonal**: small errors in $\hat\ell,\hat e$ enter only at second order, so the CATE
+estimate is robust to slow ML nuisances and is $\sqrt n$-valid when the nuisance rates clear $\alpha_\ell+\alpha_e\ge\tfrac12$,
+$\alpha_e\ge\tfrac14$. Because Lyra's engine *sets* $e(x)$, that propensity factor is exact — the orthogonality
+holds by construction, which is what makes the recovery test clean.
+
+## The causal forest — a forest-localized R-learner {#sec-forest}
+
+A random forest is an **adaptive kernel**: its prediction is a weighted average of training outcomes,
+$\hat\mu(x)=\sum_i\alpha_i(x)Y_i$, where $\alpha_i(x)$ is how often unit $i$ shares a leaf with $x$ across the
+trees. The causal forest (Athey–Tibshirani–Wager 2019) reuses those data-driven neighborhoods to solve the
+**centered (Robinson) moment locally** — the R-learner, but with forest weights instead of a global penalty:
+
+$$
+\hat\tau(x)=\frac{\sum_i\alpha_i(x)\,\bigl(W_i-\hat e(X_i)\bigr)\bigl(Y_i-\hat\ell(X_i)\bigr)}
+{\sum_i\alpha_i(x)\,\bigl(W_i-\hat e(X_i)\bigr)^2}.
+$$
+
+Splits are chosen to **maximize heterogeneity** ($\propto n_L n_R(\hat\tau_L-\hat\tau_R)^2$), so the forest
+spends its resolution where the effect actually varies. Two ingredients buy *inference*:
+
+```python
+from econml.dml import CausalForestDML
+cf = CausalForestDML(discrete_treatment=True, honest=True)
+cf.fit(Y, W, X=X, W_hat=0.5)        # known propensity -> skip e(x) estimation error
+tau_hat = cf.effect(X)              # pointwise CATE
+lo, hi  = cf.effect_interval(X)     # honest pointwise CIs
+```
+
+**Honesty** uses one subsample to choose splits and a *disjoint* subsample to estimate leaf effects — no
+double-dipping — and with subsampling (not bootstrap) $\hat\tau(x)$ is pointwise consistent and asymptotically
+Gaussian, with an infinitesimal-jackknife variance. That yields **honest pointwise intervals**
+
+$$
+\hat\tau(x)\ \pm\ z_{1-\alpha/2}\,\hat\sigma(x).
+$$
+
+Passing the known $e(x)$ (`W_hat=0.5` in a balanced RCT) skips propensity-estimation error entirely — Lyra's
+case, and the same shortcut the [ATE](ate.qmd) chapter exploits.
+
+## Certification {#sec-certify}
+
+Promoted from **NB 09** to `lyra/cate.py` (the S/T/X + forest estimators) and `lyra/dgp` (`HeteroDGP`), the
+methods meet [the harness](harness.qmd) on a randomized hetero world with a **known surface**
+
+$$
+\tau(x)=0.5+x_0-0.5\,x_1
+$$
+
+laid over a nonlinear nuisance. The ATE is a tame **+0.52**, but the true surface spans **$-3.4 \dots +4.9$** —
+so the harness can grade two things a real platform cannot: RMSE against the *whole* $\tau(x)$, and whether the
+honest intervals actually cover it.
+
+::: {.callout-note appearance="simple"}
+**The simulator superpower.** We *authored* $\tau(x)$, so for every user we know their true effect. That lets
+the harness score **CATE RMSE** against the full surface **and** check **honest-CI coverage** point by point —
+neither is observable on real data, where $\tau(x)$ is hidden. A production experimentation platform can show
+you a CATE histogram; only Lyra can tell you it is *right*.
+:::
+
+| estimator | RMSE vs true $\tau(x)$ | honest-CI coverage | reads |
+|---|---|---|---|
+| S-learner | 0.33 | — | [biased]{.bias} (shrinks toward the ATE) |
+| T-learner | 0.34 | — | [biased]{.bias} |
+| **X-learner** | **0.21** | — | [**certified**]{.cert} (best recovery) |
+| **causal forest** | 0.26 | **≈ 88%** | [**certified**]{.cert} (recovers $\tau(x)$ + honest coverage) |
+
+The **X-learner wins on RMSE** (0.21), the **causal forest covers the true surface at ≈ 88%** with its honest
+pointwise intervals, and the **S-learner visibly shrinks toward the ATE** — its surface is flatter than the
+truth, the classic regularization-toward-zero tell. The targeting payoff makes the stakes concrete: ranking
+users by $\hat\tau(x)$ and taking the **top decile** isolates a true effect of **+2.46 — 4.7× the ATE** — while
+the bottom of the surface is genuinely negative. That gap between *who the average serves* and *who actually
+benefits* is the whole reason the CATE, not the ATE, drives [policy & OPE](policy.qmd).

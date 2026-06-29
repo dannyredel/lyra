@@ -1,0 +1,198 @@
+# =============================================================================
+# Vega — run configuration (single source of truth)
+# Everything that defines a run lives here. No magic numbers in code.
+# A run is fully reproducible given (this file + meta.seed).
+# =============================================================================
+
+meta:
+  project: vega
+  run_name: mvp_baseline
+  seed: 20240531
+  horizon_days: 45            # 30–60 range; daily ticks
+  mode: real                  # real | oracle
+                              #   real   -> estimators never see ground_truth_tau
+                              #   oracle -> validation/recovery tests may read it
+
+# -----------------------------------------------------------------------------
+# Market scale  (deliberate, stated scale-down of the ~70M real platform)
+# -----------------------------------------------------------------------------
+market:
+  n_users_initial: 60000      # 50k–100k sweet spot
+  daily_arrivals: 800         # new users per tick
+  n_offers: 50                # 30–80; the "offer wall"
+  n_advertisers: 12           # games/apps; offers nest under advertisers
+  n_clusters: 120             # 50–200; geo/segment unit for cluster designs
+  categories: [puzzle, casino, rpg, survey, shopping]
+
+# -----------------------------------------------------------------------------
+# Agent (user) model — the simulated side of the market
+# Distributions are sampled per-agent at creation; seeded.
+# -----------------------------------------------------------------------------
+agents:
+  effort_budget_per_day:      # time/attention available each tick
+    dist: lognormal
+    mu: 0.0
+    sigma: 0.6
+  reward_sensitivity:         # elasticity of choice w.r.t. reward_shown
+    dist: gamma
+    shape: 2.0
+    scale: 0.5
+  category_propensity:        # Dirichlet over `market.categories`
+    dist: dirichlet
+    alpha: [1.0, 1.0, 1.0, 1.0, 1.0]
+  churn_hazard:               # baseline daily churn probability
+    dist: beta
+    a: 1.5
+    b: 30.0
+  churn_reward_protection: 0.4  # how much recent rewards lower churn hazard (0–1)
+  cluster_effect_sigma: 0.5   # SD of a per-cluster random-effect intercept on utility (B-06): shared
+                              #   geo/segment engagement -> within-cluster outcome correlation (ICC>0)
+                              #   so cluster-randomized designs need cluster-robust SEs. 0 = inert label.
+
+# -----------------------------------------------------------------------------
+# Offer (advertiser campaign) model
+# -----------------------------------------------------------------------------
+offers:
+  payout:                     # advertiser pays this per completion
+    dist: lognormal
+    mu: 0.8
+    sigma: 0.5
+  difficulty_effort:          # effort a completion costs the user
+    dist: gamma
+    shape: 2.0
+    scale: 1.0
+  pass_through_default: 0.7   # reward_shown = payout * pass_through
+  budget_cap:                 # advertiser budget per offer (depletes -> offer unavailable)
+    dist: lognormal
+    mu: 8.0                   # calibrated to 60k-user scale: ~58% of daily demand served (partial
+    sigma: 0.7               #   daily binding => cannibalization without market collapse)
+  refill: daily               # none | daily.  daily = advertiser daily-budget model (realistic for
+                              #   UA; sustainable at scale). Interference is intra-day: treated users
+                              #   early in the day's order exhaust the budget, starving controls.
+                              #   none = permanent exhaustion (PROPOSAL §4) but fragile to calibrate
+                              #   at scale (see pm/DECISIONS.md) — needs much larger caps to last the
+                              #   horizon, at which point budgets barely bind. Use a probe to retune.
+
+# -----------------------------------------------------------------------------
+# Choice model  ==  GROUND TRUTH lives here.
+# Utility u_ij = b_reward*reward_shown - b_effort*effort
+#               + match(category_propensity) + eps
+# eps ~ Gumbel (MNL) or nested by advertiser (nested logit).
+# Treatment effects are defined as shifts to these utility inputs, so the
+# engine knows ground_truth_tau exactly.
+# -----------------------------------------------------------------------------
+choice:
+  model: mnl                  # mnl | nested_logit
+  beta_reward: 1.0
+  beta_effort: 0.8
+  match_weight: 0.6
+  nest_by: advertiser         # used only if model == nested_logit
+  nest_lambda: 0.6
+
+# -----------------------------------------------------------------------------
+# Experiments  (one treatment per game; see PROPOSAL §5)
+# allocation_schedule = ramp; each step is (start_day, treatment_share)
+# -----------------------------------------------------------------------------
+experiments:
+  ramp_schedule:              # shared default ramp (the interference-decay diagnostic groups on this)
+    - { start_day: 0,  share: 0.00 }   # A/A warmup
+    - { start_day: 3,  share: 0.01 }
+    - { start_day: 7,  share: 0.05 }
+    - { start_day: 14, share: 0.20 }
+    - { start_day: 25, share: 0.50 }
+
+  list:
+    - id: exp_reward_sizing
+      advertiser: adv_A
+      type: reward_sizing
+      lever: { pass_through_delta: +0.15 }   # treatment: richer reward
+      randomization: user                    # naive unit; corrected = cluster/budget_split
+      primary_metric: margin_per_active_user
+      uses_ramp: true
+
+    - id: exp_offer_ranking
+      advertiser: adv_B
+      type: ranking
+      lever: { ranker: value_sorted }        # treatment ranker vs control (relevance baseline)
+      randomization: user
+      primary_metric: completions_per_user
+      logs_propensity: true                  # needed for OPE (IPS/DR)
+      uses_ramp: true
+
+    - id: aa_null_1
+      advertiser: adv_C
+      type: aa
+      randomization: user
+      uses_ramp: false                       # constant 50/50, must NOT flag
+
+    - id: aa_null_2
+      advertiser: adv_D
+      type: aa
+      randomization: cluster
+      uses_ramp: false
+
+  incrementality:             # ghost-ads / PSA holdout leg (advertiser-side conversions)
+    enabled: true
+    target_experiment: exp_reward_sizing
+    holdout_share: 0.10       # holdout = ghost-ads control (impression logged, no reward served)
+
+# -----------------------------------------------------------------------------
+# Metrics / OEC / guardrails  (consumed by the dbt layer + decision framework)
+# -----------------------------------------------------------------------------
+metrics:
+  primary: margin_per_active_user
+  guardrails:
+    - { name: advertiser_roas,   direction: not_below, threshold_rel: -0.05 }
+    - { name: user_retention_d7, direction: not_below, threshold_rel: -0.02 }
+    - { name: payout_cost,       direction: not_above, threshold_rel: +0.10 }
+  horizons:
+    short_term_day: 1
+    long_term_day: 30         # retention/LTV divergence; surrogate-modeling target
+
+# -----------------------------------------------------------------------------
+# Calibration anchors  (so simulated uplifts aren't fantasy — PROPOSAL §7)
+# The engine self-checks aggregate outputs against these at end of run.
+# -----------------------------------------------------------------------------
+calibration:
+  target_roas_180d: 2.0
+  target_arpu_multiple: 3.0
+  target_retention_d7_uplift: 1.20
+  tolerance: 0.25             # warn if aggregate metrics fall outside +/- tolerance
+
+# -----------------------------------------------------------------------------
+# Inference config  (which estimators run; how they're parameterized)
+# -----------------------------------------------------------------------------
+inference:
+  alpha: 0.05
+  estimators: [naive, cuped, cluster, budget_split, anytime_valid, incrementality, ope]
+  cuped:
+    covariates: [pre_period_completions, pre_period_effort]
+  anytime_valid:
+    method: asymptotic_cs    # asymptotic_cs | msprt
+    rho2: 0.05               # CS tuning (controls where the sequence is tightest)
+  cluster:
+    unit: cluster_id         # aggregate to randomization unit before testing
+  ope:
+    estimators: [ips, doubly_robust]
+  multiple_testing:
+    method: bh_fdr           # across the portfolio of concurrent experiments
+    q: 0.10
+
+# -----------------------------------------------------------------------------
+# Output / serving
+# -----------------------------------------------------------------------------
+output:
+  event_log_dir: events/
+  event_log_format: parquet  # partitioned by day=
+  snapshot_cadence_days: 1   # dashboard replays one snapshot per simulated day
+
+# -----------------------------------------------------------------------------
+# Warehouse  (decision: DuckDB local; BigQuery profile is the documented swap)
+# -----------------------------------------------------------------------------
+warehouse:
+  target: duckdb             # duckdb | bigquery
+  duckdb: { path: vega.duckdb }
+  bigquery:                  # filled in only if/when a live BQ run is needed
+    project: ""
+    dataset: vega
+    location: EU

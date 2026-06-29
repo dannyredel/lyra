@@ -1,0 +1,7 @@
+# raw / large / sensitive data stays local — don't vendor it
+data/raw/
+data/*.csv
+data/*.parquet
+data/*.xlsx
+*.ipynb_checkpoints/
+.cache/

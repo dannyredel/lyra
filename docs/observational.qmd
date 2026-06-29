@@ -1,0 +1,160 @@
+---
+title: "Observational causal inference"
+subtitle: "The assumption you can't test."
+---
+
+::: {.lead}
+Most business questions arrive *observational* — spend was set by a manager, not a coin; users
+self-selected into the feature; the campaign chased releases that were already hot. There is no
+experiment, and there never will be one. This chapter walks the two halves of the subject: selection
+on *observables*, which doubly-robust machinery solves, and selection on *unobservables*, which no
+estimator can solve and no diagnostic can detect — only **sensitivity analysis** can quantify your
+exposure to it. *(Recycled from `notebooks/11_observational.py` + `lyra/observational.py`.)*
+:::
+
+## The solvable half — selection on observables {#sec-observables}
+
+Start where causal inference *works*. Suppose treatment $D$ is non-random but driven entirely by
+covariates $X$ we record — a manager who funds the apps that *look* promising on observed signals.
+Identification rests on **unconfoundedness**, $\{Y(0),Y(1)\} \perp\!\!\!\perp D \mid X$: once $X$ is
+held fixed, assignment is as good as random. Nothing is hidden; the assignment is simply *tilted*.
+
+This is exactly the ladder of [ATE](ate.qmd) estimators. The naive difference and a *linear* OLS
+adjustment are [biased]{.bias} the moment the propensity $e(X)=\Pr(D{=}1\mid X)$ tilts and the
+baseline is nonlinear. The **doubly-robust AIPW** estimator and its library cousin **DML**
+(`econml.LinearDML`, cross-fitted) recover the truth — consistent if *either* the outcome model or
+the propensity is right. On `DGPLevel1` with a confounding knob and a nonlinear baseline
+(`ate=2.0`), the verdict is the same one the ATE chapter certifies:
+
+| estimator | observed confounding · nonlinear | reads |
+|---|---|---|
+| diff-in-means | bias large, coverage $0.00$ | [uncertified]{.bias} |
+| OLS (linear) | bias large, coverage $0.00$ | [uncertified]{.bias} |
+| **AIPW** | bias $\approx +0.04$, coverage $\approx 0.93$ | [**certified**]{.cert} |
+| **DML** (`econml`) | bias $\approx -0.02$, coverage $\approx 0.90$ | [**certified**]{.cert} |
+
+Selection on *observables* is engineering: the confounding is fully recorded, so it is fixable. The
+reassuring picture — and exactly why it is dangerous — is that the estimator gives **no warning** if
+$X$ is incomplete.
+
+## The wall — a hidden confounder {#sec-wall}
+
+Now plant a confounder $U$ that drives *both* treatment and outcome but is **never recorded**. Keep
+the observed baseline linear in $X$ so OLS is correctly specified for the observables — the *only*
+remaining problem is $U$:
+
+$$
+e(X,U)=\sigma\!\left(c\,x_0 + a_U\,U\right),\qquad
+Y = b(X) + b_U\,U + \tau\,D + \varepsilon,\quad U\ \text{hidden}.
+$$
+
+Because the same $U$ pushes people *into* treatment and *up* in outcome, the treated look better than
+their true counterfactual, and no adjustment on $X$ can undo it. Run the same four estimators with
+$\tau=2.0$ but $U$ omitted from the panel: all four — including the doubly-robust pair that *nailed*
+the observed case — read $\approx +4.0$, with tight intervals that **exclude** the truth. None
+cover. Nothing in the data flags it.
+
+This is the wall. Unconfoundedness is **untestable**: a hidden confounder leaves no footprint in the
+fit, no residual pattern, no failed diagnostic. Adjustment cannot remove what it cannot see, and no
+amount of model flexibility helps. The only honest response is to stop asking *"is there a $U$?"* —
+which the data cannot answer — and ask instead *"how strong would a $U$ have to be to overturn this
+result?"*
+
+## Sensitivity analysis {#sec-sensitivity}
+
+Cinelli & Hazlett (2020) put this on a regression footing through **partial $R^2$** — the share of
+residual variance one variable explains given the others. For the treatment coefficient with
+$t$-statistic $t$ and residual degrees of freedom $\mathrm{dof}$:
+
+$$
+R^2_{Y\sim D\mid X}=\frac{t^2}{t^2+\mathrm{dof}}.
+$$
+
+This is the scale on which confounding strength is measured. From it follows the **robustness value**
+$RV_q$ — the minimal partial $R^2$ an unobserved confounder must share with *both* treatment and
+outcome (beyond $X$) to move the estimate by a fraction $q$ of itself (with $q=1$, down to zero):
+
+$$
+RV_q=\tfrac12\!\left(\sqrt{f_q^4+4f_q^2}-f_q^2\right),
+\qquad f_q=\frac{q\,|t|}{\sqrt{\mathrm{dof}}}.
+$$
+
+An $RV=0.30$ reads: *"confounding would need to explain 30% of the residual variation in both
+treatment and outcome, beyond $X$, to explain the effect away."* The companion is the
+**omitted-variable-bias** formula — the bias a confounder $Z$ of given strength would inject:
+
+$$
+\text{bias}=\mathrm{se}\cdot\sqrt{\mathrm{dof}}\cdot
+\sqrt{\frac{R^2_{Y\sim Z}\,R^2_{D\sim Z}}{1-R^2_{D\sim Z}}}.
+$$
+
+Sweeping $(R^2_{D\sim Z}, R^2_{Y\sim Z})$ over a grid traces the **OVB contour**, whose $0$-line is
+the "explained away" frontier — a map of doubt, with a confident result living far inside the green
+region. VanderWeele & Ding (2017) give a one-number cousin on the risk-ratio scale, the **E-value**:
+
+$$
+E=RR+\sqrt{RR(RR-1)},
+$$
+
+the minimum association (with both treatment and outcome) an unmeasured confounder must have to fully
+explain a risk ratio $RR$. On the hidden-$U$ fit, the sensitivity readout is $RV \approx 0.60$ and
+$E \approx 5.5$.
+
+::: {.callout-note appearance="simple"}
+**"Not null" $\neq$ "unbiased."** The high $RV$ (0.60) and E-value (5.5) say *"a confounder strong
+enough to make this effect **null** is implausible"* — and they're right, the effect is genuinely
+there ($\tau=2.0$). But the same hidden $U$ still **inflated the magnitude $2\times$** (4.0 vs 2.0).
+So: the **RV / E-value** address robustness of the *sign / existence* — *could a confounder explain
+the effect away?* The **OVB contour & bias formula** address the *magnitude bias* — *how biased is
+the number?* A "robust" RV is not a clean bill of health for the number. Report both.
+:::
+
+## The superpower — validate the sensitivity analysis {#sec-superpower}
+
+In a real study you would *stop here* and argue about plausibility. But Lyra **authored** $U$, so it
+can do what no real analyst can: check whether the sensitivity math is *right*. Reveal $U$ via the
+DGP's oracle, measure its *true* partial $R^2$ with treatment and outcome, feed those to the OVB
+formula, and compare the **predicted** bias to the **actual** bias the hidden $U$ caused.
+
+```python
+predicted_bias = ovb_bias(se_obs, dof, r2_dz, r2_yz)   # U's TRUE strengths, from the oracle
+actual_bias    = b_obs - dgp_hid.ate                   # what U really did
+```
+
+The OVB formula predicts a bias of **+1.93**; the actual bias the hidden $U$ injected is **+2.01** —
+agreement within **0.08**. Sweeping $U$'s outcome-strength $b_U$ confirms it: as $U$ strengthens the
+$X$-adjusted estimate drifts up, and feeding $U$'s *true* strength to the formula pulls it back onto
+the dashed truth every time. The sensitivity tool is itself [certified]{.cert} against ground truth —
+the discipline that makes an untestable assumption *auditable*.
+
+## Benchmarking U against what you measured {#sec-benchmark}
+
+An $RV$ is only useful next to a yardstick. The honest calibration asks: *how does the $U$ you'd need
+compare to the confounders you actually measured?* Take each observed covariate's partial $R^2$ with
+the outcome (its own $t$ in the $y \sim D + X$ fit), find the strongest, and express the threat as a
+multiple of it. Here, an unobserved $U$ would need to be roughly **4.5× as strongly** associated with
+the outcome as the strongest observed confounder to explain the effect away. If overturning the
+result needs a $U$ many times stronger than your most important covariate, the finding is robust; if
+a $U$ as weak as `x0` would do it, it's fragile.
+
+## Certification {#sec-certify}
+
+Every estimator ends behind the `Estimator` Protocol and earns its verdict from [the harness](harness.qmd).
+Under **observed** confounding (`DGPLevel1`, nonlinear baseline, $\tau=2.0$), the doubly-robust pair
+must recover truth with nominal coverage and the naive pair must visibly fail — the bias a *measured,
+asserted* quantity, not a chart:
+
+| estimator | bias | coverage | verdict |
+|---|---|---|---|
+| diff-in-means | large | $0.00$ | [uncertified]{.bias} |
+| OLS (linear) | large | $0.00$ | [uncertified]{.bias} |
+| **AIPW** | $\approx +0.04$ | $\approx 0.93$ | [**certified**]{.cert} |
+| **DML** | $\approx -0.02$ | $\approx 0.90$ | [**certified**]{.cert} |
+
+The deeper certification is **meta**: the harness certifies the *estimators* against ground truth, and
+the oracle certifies the *sensitivity analysis* against ground truth — the OVB formula's predicted
+**+1.93** versus the true **+2.01** the hidden $U$ caused. Selection on observables is solvable;
+selection on unobservables is unfalsifiable; and because Lyra authors the world, even the tool that
+quantifies the unfalsifiable can be graded. That is the discipline applied one level up — and the
+spine of the `labs/music-marketing/` identification study, where spend endogeneity *is* confounding
+and observational answers ship *with* their sensitivity story, not instead of one.

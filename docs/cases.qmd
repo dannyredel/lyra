@@ -1,0 +1,128 @@
+---
+title: "Study cases"
+subtitle: "The methods of this guide, applied across six industries — each a real business decision."
+---
+
+::: {.lead}
+The method chapters build the estimators in isolation; this one puts them to work. Each case starts from a
+concrete business question — *should we ship the bigger reward? does surge actually raise GMV? is that
+promo real lift or just cannibalization?* — names the identification problem that makes it hard, points to
+the chapter that solves it, and reports what Lyra **certifies against the known truth**. The same six
+verticals recur as motivating examples throughout the guide; here they are the whole story.
+:::
+
+## Rewarded UA — reward sizing {#sec-reward-ua}
+
+**The question.** A rewarded-UA marketplace (think Almedia / Freecash) pays users to complete advertiser
+offers. Does a **bigger sign-up reward lift conversion** — without blowing payout cost?
+
+**Why it's hard.** A larger reward can lift the primary metric while quietly hurting the business: it
+attracts reward-seekers who never retain, or it costs more than the conversions are worth. A win on
+conversion *alone* is not a ship — the decision is a **conjunction** of the primary effect and the
+guardrails.
+
+**Design & method.** A plain A/B on conversion, sharpened with [CUPED variance
+reduction](metrics.qmd#sec-cuped), wrapped in a ship rule that requires advertiser payout cost and D7
+retention to clear their non-inferiority margins. The estimand is the lift in conversion probability,
+$\tau = \Pr(Y{=}1\mid W{=}1) - \Pr(Y{=}1\mid W{=}0)$, gated by guardrails.
+
+**What Lyra certifies.** Because the agent utility model *sets* the true reward elasticity, the planted
+lift is known: Lyra reports **+25.7% conversion, [certified]{.cert}** — its CI covers truth — and the
+decision ships only when the guardrails hold.
+
+## On-demand surge — switchback {#sec-surge}
+
+**The question.** An on-demand delivery / rideshare market. Does **surge pricing raise GMV per period**,
+when you cannot A/B individual users?
+
+**Why it's hard.** Pricing moves *shared supply* — couriers, drivers — so a user-level A/B violates SUTVA:
+a treated user's outcome depends on how many others are treated. Randomizing whole cities gives a sample
+size of ~2. The fix randomizes **over time**, at the price of carryover and a power floor from macro shocks.
+
+**Design & method.** A [switchback design](switchback.qmd) that toggles surge on and off within a market,
+with [cluster-robust SEs](cluster.qmd) over time-blocks and [CUPED](metrics.qmd#sec-cuped) on the GMV
+series. The target is the per-period effect $\tau$ on GMV.
+
+**What Lyra certifies.** The DGP authors $\tau$ inside a multi-shock series with carryover; the switchback
+recovers it and reads **+3.7% GMV/period, [certified]{.cert}**. The structural power floor — macro shocks
+that do not average away — is visible in the design itself, not a surprise after launch.
+
+## Marketplace — cannibalization {#sec-marketplace}
+
+**The question.** A two-sided marketplace with a **shared budget** (promotions, ad spend, reward pools).
+Does a promo create new conversions — or just **steal them from elsewhere**?
+
+**Why it's hard.** Treated users draw down the common resource and cannibalize the controls, so a naive
+user-level A/B over-states the global effect 3–5×. The tell-tale: the estimate *drifts as you ramp* the
+allocation. SUTVA is broken at the budget.
+
+**Design & method.** [Cluster randomization with an interference-aware analysis](interference.qmd):
+randomize whole clusters so spillover stays *within* arm, and target the **global** all-treat-vs-all-control
+contrast rather than the contaminated individual one.
+
+**What Lyra certifies.** With the true global effect authored, the naive A/B reads **+0.33,
+[uncertified]{.bias}** — its CI misses truth — while the cluster design reads **+0.078, [certified]{.cert}**,
+the planted value. Lyra **refuses to certify the biased design before it ships**.
+
+## E-commerce — checkout & the trust check {#sec-checkout}
+
+**The question.** An e-commerce store testing a checkout redesign. Did the new flow lift conversion — and
+can you even **trust the readout** in the first place?
+
+**Why it's hard.** Two silent killers precede any effect estimate: **peeking** at results inflates false
+positives, and a broken randomizer (**sample-ratio mismatch**) biases everything downstream. You must prove
+the *pipeline* is trustworthy before believing any A/B number.
+
+**Design & method.** An [A/A test as the promotion gate](metrics.qmd#sec-aagate) (zero true effect must read
+"no detectable change"), an SRM check on the assignment split, and an
+[always-valid confidence sequence](sequential.qmd#sec-cs) so analysts can peek any time without inflating
+$\alpha$.
+
+**What Lyra certifies.** Run alongside real-effect variants, the **A/A correctly shows no effect** — proof
+the pipeline does not manufacture false wins — the SRM gate passes, and the confidence sequence stays
+[certified]{.cert} under continuous monitoring. Trust first, then test.
+
+## Ads incrementality — ghost-ad holdout {#sec-incrementality}
+
+**The question.** A performance-marketing team. Most "attributed" conversions would have happened anyway —
+what is the **real incremental lift** of the ad?
+
+**Why it's hard.** Naive attribution credits every conversion among the exposed to the ad, but most are
+organic (Lewis–Rao). The true lift is small and easily faked. Worse, the ad doesn't always serve, so you
+must separate the effect of *assignment* (ITT) from the effect on the *exposed* (CACE):
+
+$$
+\tau_{\text{CACE}} = \frac{\text{ITT}_{Y}}{\text{ITT}_{D}}
+= \frac{\mathbb{E}[Y\mid Z{=}1]-\mathbb{E}[Y\mid Z{=}0]}{\Pr(D{=}1\mid Z{=}1)-\Pr(D{=}1\mid Z{=}0)}.
+$$
+
+**Design & method.** A [ghost-ad / PSA holdout](incrementality.qmd) — the ad withheld, the organic path
+intact — reporting the ITT and the [non-compliance-corrected CACE](incrementality.qmd). Validated on the
+real **Criteo Uplift** RCT (13.9M rows).
+
+**What Lyra certifies.** With the organic propensity and the true $\tau$ authored, the holdout recovers it
+while **naive attribution overstates ~6× ([biased]{.bias})**; the same estimator on Criteo returns a small,
+highly-significant **+1.06pp visit lift, [certified]{.cert}**. Validated at scale.
+
+## Personalization — CATE & targeting {#sec-cate}
+
+**The question.** The average effect is small, but who actually responds — and is **targeting** worth it?
+
+**Why it's hard.** The ATE hides huge heterogeneity: here an ATE of $+0.5$ spans per-user effects from
+$-3$ to $+5$, and roughly a third of users are *actively harmed*. You need trustworthy per-user effects
+$\tau(x)=\mathbb{E}[Y(1)-Y(0)\mid X{=}x]$, a deployable policy, and an **honest estimate of that policy's
+value from logged data**.
+
+**Design & method.** A [causal forest for CATE](cate.qmd) with pointwise intervals, a targeting
+[policy learned and evaluated off-policy](policy.qmd) (doubly-robust OPE, ranked by uplift / RATE).
+
+**What Lyra certifies.** The true CATE surface $\tau(x)$ is authored, so both the estimate and the policy
+value can be graded: the forest's pointwise CIs **cover the true $\tau(x)$ ([certified]{.cert})**, the
+targeting policy beats treat-all **~2.9×** net of cost, and doubly-robust OPE recovers the true policy value
+— tighter than IPS.
+
+::: {.callout-tip appearance="simple"}
+**These cases are live.** Every study case here is an interactive, seeded experiment in the
+[Lyra demo](https://lyra-five-sable.vercel.app) — open one, ramp the allocation, watch the naive estimate
+drift and the certified design hold. The guide is the *why*; the demo is the *try it yourself*.
+:::

@@ -1,0 +1,410 @@
+{
+  "M": 5,
+  "channels": [
+    "meta",
+    "tiktok",
+    "spotify",
+    "plugger"
+  ],
+  "baseline_nopool": {
+    "n_sims": 4,
+    "median_abs_rel_bias": 0.4263367569951676,
+    "coverage": 0.0625,
+    "class_accuracy": 0.625,
+    "kappa_detected_frac": 1.0,
+    "mroas_rmse": 3.0387263063385803,
+    "channels": {
+      "meta": -0.34259527107614424,
+      "tiktok": -0.06404796980003681,
+      "spotify": 0.609606946905709,
+      "plugger": 0.9404029444326234
+    },
+    "convergence": {
+      "n_converged": 4,
+      "n_attempted": 5,
+      "frac_dropped": 0.19999999999999996
+    }
+  },
+  "null_kappa_fp": 0.0,
+  "elapsed_s": 1303.0,
+  "cells": [
+    {
+      "label": "baseline (favorable)",
+      "axis": "\u2014",
+      "scenario": "N60_rho0.4_k0.8_g0.5_geo",
+      "knobs": {
+        "N": 60,
+        "rho": 0.4,
+        "kappa": 0.8,
+        "gamma": 0.5,
+        "geo": true
+      },
+      "pooled_geo": {
+        "n_sims": 5,
+        "median_abs_rel_bias": 0.06656477172110158,
+        "coverage": 0.75,
+        "class_accuracy": 1.0,
+        "kappa_detected_frac": 1.0,
+        "mroas_rmse": 0.6032897619839032,
+        "channels": {
+          "meta": -0.05567929662740232,
+          "tiktok": -0.016114303621885057,
+          "spotify": 0.22776070484767255,
+          "plugger": 0.016967159795886033
+        },
+        "convergence": {
+          "n_converged": 5,
+          "n_attempted": 5,
+          "frac_dropped": 0.0
+        }
+      },
+      "verdict": "GO",
+      "ledger": {
+        "H1 rel-bias": {
+          "pass": true,
+          "detail": "median |rel bias| 0.07 (< 0.25)"
+        },
+        "H2 coverage": {
+          "pass": true,
+          "detail": "80% coverage 0.75 (in 0.7-0.9)"
+        },
+        "H3 keep/cut": {
+          "pass": true,
+          "detail": "keep/cut acc 1.00 (>= 0.8)"
+        },
+        "H4 kappa null": {
+          "pass": true,
+          "detail": "kappa false-positive 0.00 (<= 0.2)"
+        },
+        "H5 pooling": {
+          "pass": true,
+          "detail": "pooling cuts mROAS RMSE 80% vs nopool (>= 20%)"
+        }
+      }
+    },
+    {
+      "label": "releases N=40",
+      "axis": "data poverty",
+      "scenario": "N40_rho0.4_k0.8_g0.5_geo",
+      "knobs": {
+        "N": 40,
+        "rho": 0.4,
+        "kappa": 0.8,
+        "gamma": 0.5,
+        "geo": true
+      },
+      "pooled_geo": {
+        "n_sims": 4,
+        "median_abs_rel_bias": 0.04201623214737349,
+        "coverage": 1.0,
+        "class_accuracy": 1.0,
+        "kappa_detected_frac": 1.0,
+        "mroas_rmse": 0.4267803438188517,
+        "channels": {
+          "meta": -0.0034759256785965847,
+          "tiktok": -0.0022892196361075402,
+          "spotify": -0.04544426890389313,
+          "plugger": 0.06939787939889284
+        },
+        "convergence": {
+          "n_converged": 4,
+          "n_attempted": 5,
+          "frac_dropped": 0.19999999999999996
+        }
+      },
+      "verdict": "RESCOPE",
+      "ledger": {
+        "H1 rel-bias": {
+          "pass": true,
+          "detail": "median |rel bias| 0.04 (< 0.25)"
+        },
+        "H2 coverage": {
+          "pass": false,
+          "detail": "80% coverage 1.00 (in 0.7-0.9)"
+        },
+        "H3 keep/cut": {
+          "pass": true,
+          "detail": "keep/cut acc 1.00 (>= 0.8)"
+        },
+        "H4 kappa null": {
+          "pass": true,
+          "detail": "kappa false-positive 0.00 (<= 0.2)"
+        },
+        "H5 pooling": {
+          "pass": true,
+          "detail": "pooling cuts mROAS RMSE 86% vs nopool (>= 20%)"
+        }
+      }
+    },
+    {
+      "label": "releases N=24",
+      "axis": "data poverty",
+      "scenario": "N24_rho0.4_k0.8_g0.5_geo",
+      "knobs": {
+        "N": 24,
+        "rho": 0.4,
+        "kappa": 0.8,
+        "gamma": 0.5,
+        "geo": true
+      },
+      "pooled_geo": {
+        "n_sims": 5,
+        "median_abs_rel_bias": 0.11157765427236749,
+        "coverage": 0.95,
+        "class_accuracy": 1.0,
+        "kappa_detected_frac": 1.0,
+        "mroas_rmse": 0.6443078387277115,
+        "channels": {
+          "meta": -0.06918361001240017,
+          "tiktok": 0.00484724220917914,
+          "spotify": 0.1358416076599982,
+          "plugger": 0.22733567232759996
+        },
+        "convergence": {
+          "n_converged": 5,
+          "n_attempted": 5,
+          "frac_dropped": 0.0
+        }
+      },
+      "verdict": "RESCOPE",
+      "ledger": {
+        "H1 rel-bias": {
+          "pass": true,
+          "detail": "median |rel bias| 0.11 (< 0.25)"
+        },
+        "H2 coverage": {
+          "pass": false,
+          "detail": "80% coverage 0.95 (in 0.7-0.9)"
+        },
+        "H3 keep/cut": {
+          "pass": true,
+          "detail": "keep/cut acc 1.00 (>= 0.8)"
+        },
+        "H4 kappa null": {
+          "pass": true,
+          "detail": "kappa false-positive 0.00 (<= 0.2)"
+        },
+        "H5 pooling": {
+          "pass": true,
+          "detail": "pooling cuts mROAS RMSE 79% vs nopool (>= 20%)"
+        }
+      }
+    },
+    {
+      "label": "collinearity \u03c1=0.7",
+      "axis": "collinearity",
+      "scenario": "N60_rho0.7_k0.8_g0.5_geo",
+      "knobs": {
+        "N": 60,
+        "rho": 0.7,
+        "kappa": 0.8,
+        "gamma": 0.5,
+        "geo": true
+      },
+      "pooled_geo": {
+        "n_sims": 5,
+        "median_abs_rel_bias": 0.036475820315336895,
+        "coverage": 0.9,
+        "class_accuracy": 1.0,
+        "kappa_detected_frac": 1.0,
+        "mroas_rmse": 0.4381115575499398,
+        "channels": {
+          "meta": 0.009452869545342562,
+          "tiktok": 0.009006783709114532,
+          "spotify": -0.012497852695733776,
+          "plugger": 0.0360417763805577
+        },
+        "convergence": {
+          "n_converged": 5,
+          "n_attempted": 5,
+          "frac_dropped": 0.0
+        }
+      },
+      "verdict": "GO",
+      "ledger": {
+        "H1 rel-bias": {
+          "pass": true,
+          "detail": "median |rel bias| 0.04 (< 0.25)"
+        },
+        "H2 coverage": {
+          "pass": true,
+          "detail": "80% coverage 0.90 (in 0.7-0.9)"
+        },
+        "H3 keep/cut": {
+          "pass": true,
+          "detail": "keep/cut acc 1.00 (>= 0.8)"
+        },
+        "H4 kappa null": {
+          "pass": true,
+          "detail": "kappa false-positive 0.00 (<= 0.2)"
+        },
+        "H5 pooling": {
+          "pass": true,
+          "detail": "pooling cuts mROAS RMSE 86% vs nopool (>= 20%)"
+        }
+      }
+    },
+    {
+      "label": "collinearity \u03c1=0.9",
+      "axis": "collinearity",
+      "scenario": "N60_rho0.9_k0.8_g0.5_geo",
+      "knobs": {
+        "N": 60,
+        "rho": 0.9,
+        "kappa": 0.8,
+        "gamma": 0.5,
+        "geo": true
+      },
+      "pooled_geo": {
+        "n_sims": 4,
+        "median_abs_rel_bias": 0.04964992842953589,
+        "coverage": 1.0,
+        "class_accuracy": 1.0,
+        "kappa_detected_frac": 1.0,
+        "mroas_rmse": 0.3274522729273197,
+        "channels": {
+          "meta": 0.008724429271726269,
+          "tiktok": 0.011838730005512308,
+          "spotify": -0.015621435284571487,
+          "plugger": 0.06554560458145202
+        },
+        "convergence": {
+          "n_converged": 4,
+          "n_attempted": 5,
+          "frac_dropped": 0.19999999999999996
+        }
+      },
+      "verdict": "RESCOPE",
+      "ledger": {
+        "H1 rel-bias": {
+          "pass": true,
+          "detail": "median |rel bias| 0.05 (< 0.25)"
+        },
+        "H2 coverage": {
+          "pass": false,
+          "detail": "80% coverage 1.00 (in 0.7-0.9)"
+        },
+        "H3 keep/cut": {
+          "pass": true,
+          "detail": "keep/cut acc 1.00 (>= 0.8)"
+        },
+        "H4 kappa null": {
+          "pass": true,
+          "detail": "kappa false-positive 0.00 (<= 0.2)"
+        },
+        "H5 pooling": {
+          "pass": true,
+          "detail": "pooling cuts mROAS RMSE 89% vs nopool (>= 20%)"
+        }
+      }
+    },
+    {
+      "label": "no geo anchor",
+      "axis": "no experiment",
+      "scenario": "N60_rho0.4_k0.8_g0.5_nogeo",
+      "knobs": {
+        "N": 60,
+        "rho": 0.4,
+        "kappa": 0.8,
+        "gamma": 0.5,
+        "geo": false
+      },
+      "pooled_geo": {
+        "n_sims": 4,
+        "median_abs_rel_bias": 0.09123652205208033,
+        "coverage": 0.6875,
+        "class_accuracy": 1.0,
+        "kappa_detected_frac": 1.0,
+        "mroas_rmse": 0.7930523298559322,
+        "channels": {
+          "meta": -0.07040062407694432,
+          "tiktok": -0.01804149199606396,
+          "spotify": 0.23013137691128455,
+          "plugger": 0.05070797788169408
+        },
+        "convergence": {
+          "n_converged": 4,
+          "n_attempted": 5,
+          "frac_dropped": 0.19999999999999996
+        }
+      },
+      "verdict": "RESCOPE",
+      "ledger": {
+        "H1 rel-bias": {
+          "pass": true,
+          "detail": "median |rel bias| 0.09 (< 0.25)"
+        },
+        "H2 coverage": {
+          "pass": false,
+          "detail": "80% coverage 0.69 (in 0.7-0.9)"
+        },
+        "H3 keep/cut": {
+          "pass": true,
+          "detail": "keep/cut acc 1.00 (>= 0.8)"
+        },
+        "H4 kappa null": {
+          "pass": true,
+          "detail": "kappa false-positive 0.00 (<= 0.2)"
+        },
+        "H5 pooling": {
+          "pass": true,
+          "detail": "pooling cuts mROAS RMSE 74% vs nopool (>= 20%)"
+        }
+      }
+    },
+    {
+      "label": "endogeneity \u03b3=1.2",
+      "axis": "endogeneity",
+      "scenario": "N60_rho0.4_k0.8_g1.2_geo",
+      "knobs": {
+        "N": 60,
+        "rho": 0.4,
+        "kappa": 0.8,
+        "gamma": 1.2,
+        "geo": true
+      },
+      "pooled_geo": {
+        "n_sims": 4,
+        "median_abs_rel_bias": 0.056140467101630134,
+        "coverage": 0.8125,
+        "class_accuracy": 1.0,
+        "kappa_detected_frac": 1.0,
+        "mroas_rmse": 0.4483756192347178,
+        "channels": {
+          "meta": -0.03128097886803192,
+          "tiktok": -0.014291884369044784,
+          "spotify": 0.0431152572825297,
+          "plugger": -0.016932171821218492
+        },
+        "convergence": {
+          "n_converged": 4,
+          "n_attempted": 5,
+          "frac_dropped": 0.19999999999999996
+        }
+      },
+      "verdict": "GO",
+      "ledger": {
+        "H1 rel-bias": {
+          "pass": true,
+          "detail": "median |rel bias| 0.06 (< 0.25)"
+        },
+        "H2 coverage": {
+          "pass": true,
+          "detail": "80% coverage 0.81 (in 0.7-0.9)"
+        },
+        "H3 keep/cut": {
+          "pass": true,
+          "detail": "keep/cut acc 1.00 (>= 0.8)"
+        },
+        "H4 kappa null": {
+          "pass": true,
+          "detail": "kappa false-positive 0.00 (<= 0.2)"
+        },
+        "H5 pooling": {
+          "pass": true,
+          "detail": "pooling cuts mROAS RMSE 85% vs nopool (>= 20%)"
+        }
+      }
+    }
+  ]
+}

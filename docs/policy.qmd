@@ -1,0 +1,154 @@
+---
+title: "Policy learning & off-policy evaluation"
+subtitle: "From 'who responds' to 'whom to treat — and what that policy is worth.'"
+---
+
+::: {.lead}
+A CATE surface answers *who responds*; a platform has to answer *whom to treat*, and then defend the
+number that decision is worth. This chapter turns $\hat\tau(x)$ into an evaluated targeting policy — built
+on the doubly-robust score $\Gamma$, tested for real heterogeneity with uplift curves and RATE, learned as
+an interpretable rule, and priced by off-policy evaluation that recovers a counterfactual policy's value
+from logged data alone. *(Math recycled from `notation/policy-learning.md`, after Wager ch. 5.)*
+:::
+
+## The doubly-robust score {#sec-score}
+
+Everything downstream is built from one per-unit quantity: the cross-fitted AIPW pseudo-outcome, the same
+influence-function score that grades [the ATE](ate.qmd),
+
+$$
+\hat\Gamma_i = \hat\mu_{(1)}(X_i)-\hat\mu_{(0)}(X_i)
++\frac{W_i\big(Y_i-\hat\mu_{(1)}(X_i)\big)}{\hat e(X_i)}
+-\frac{(1-W_i)\big(Y_i-\hat\mu_{(0)}(X_i)\big)}{1-\hat e(X_i)}.
+$$
+
+$\Gamma_i$ is an *unbiased-for-$\tau(X_i)$* signal: $\mathbb{E}[\Gamma_i\mid X_i]=\tau(X_i)$ whenever
+either nuisance is right, and $\frac1n\sum_i\hat\Gamma_i$ is exactly the AIPW ATE. With nuisances fit on
+held-out folds (the DML cross-fitting recipe), the product-of-errors bias drops out and the score is the
+currency of every policy claim below — a value, a comparison, a curve is just a different aggregation of the
+*same* $\hat\Gamma_i$.
+
+```python
+gamma = aipw_score(Y, W, X, mu1, mu0, e)   # cross-fitted, one per unit
+ate_hat = gamma.mean()                      # the AIPW ATE falls straight out
+```
+
+## Uplift curves, AUUC & RATE {#sec-uplift}
+
+Before targeting anything, test that heterogeneity is *real and targetable* — a flat $\tau(x)$ means there
+is nothing to gain over treat-all. Rank units by a priority score $S$ (typically $S=\hat\tau$), treat the
+top-$q$ fraction $\pi_S^q(x)=\mathbb 1\{S(x)\ge F_S^{-1}(1-q)\}$, and trace the **benefit** against $q$:
+
+$$
+\Delta(\pi_S^q)=\frac1n\sum_i \pi_S^q(X_i)\,\hat\Gamma_i .
+$$
+
+The **uplift / QINI curve** plots $\Delta(\pi_S^q)$ vs $q$ (the cost–benefit of treating more); the area
+under it is **AUUC**. The sharper test is the **TOC / RATE** curve, which asks whether the top-$q$ benefit
+*more than a random slice would*:
+
+$$
+\mathrm{TOC}(q)=q^{-1}\Delta(\pi_S^q)-\Delta(\mathbf 1),
+\qquad
+\mathrm{RATE}=\mathrm{AUTOC}=\int_0^1 \mathrm{TOC}(q)\,dq .
+$$
+
+With $S=\hat\tau$, $\mathrm{AUTOC}>0$ *is* a heterogeneity measure (Yadlowsky et al. 2025); its
+studentized $z$ is a clean significance test that prioritization beats random allocation.
+
+## Policy learning {#sec-learn}
+
+A policy is a rule $\pi:\mathcal X\to\{0,1\}$ with **value** $V(\pi)=\mathbb{E}[Y_i(\pi(X_i))]$. The
+unrestricted optimum simply thresholds the CATE, $\pi^*(x)=\mathbb 1\{\tau(x)>0\}$ (or $>C$ for a per-unit
+cost $C$) — the **threshold policy**. But $X$ plays two roles: rich features feed $\hat\mu,\hat e$ for
+unconfoundedness, while the *decision* rule should exclude gameable, protected, or unmeasurable features. So
+fit nuisances broadly and restrict $\pi$ to an interpretable class $\Pi$ — the **empirical-welfare
+maximization (EWM)** view:
+
+$$
+\hat\pi=\arg\max_{\pi\in\Pi}\hat V(\pi),
+\qquad
+R(\hat\pi)=\sup_{\pi\in\Pi}V(\pi)-V(\hat\pi)\ \le\ 2\sup_{\pi\in\Pi}\lvert\hat V(\pi)-V(\pi)\rvert .
+$$
+
+The operational trick: maximizing $\hat V_{AIPW}(\pi)$ over $\Pi$ is **weighted classification** with the
+sign of the AIPW score as the label and its magnitude as the weight,
+
+$$
+\hat\pi=\arg\max_{\pi\in\Pi}\frac1n\sum_i \big(2\pi(X_i)-1\big)\,\mathrm{sign}(\hat\Gamma_i)\,\lvert\hat\Gamma_i\rvert .
+$$
+
+That lets a constrained, **interpretable policy tree** (a shallow decision tree over the decision features)
+be fit with off-the-shelf classifiers — promoted to `lyra/policy.py` from notebook NB 10.
+
+::: {.callout-warning appearance="simple"}
+**Keep the exact weighted loss.** Don't swap in a logistic or hinge *surrogate* for the
+$\lvert\hat\Gamma_i\rvert$-weighted 0–1 problem — the regret guarantee above is tied to the exact loss, and
+a convenient surrogate quietly breaks it.
+:::
+
+## Off-policy evaluation {#sec-ope}
+
+The payoff question — *what is policy $\pi$ worth?* — is answerable from **logged** data, without ever
+running $\pi$. The inverse-propensity-score estimate reweights units whose logged action agrees with $\pi$:
+
+$$
+\hat V_{IPS}(\pi)=\frac1n\sum_i\frac{\mathbb 1\{W_i=\pi(X_i)\}\,Y_i}{P\!\big(W_i=\pi(X_i)\mid X_i\big)},
+$$
+
+unbiased but high-variance. The **doubly-robust value** augments it with the outcome model — the policy
+analogue of AIPW, efficient and $\sqrt n$-normal under cross-fitting:
+
+$$
+\hat V_{DR}(\pi)=\frac1n\sum_i\Big[\hat\mu_{\pi(X_i)}(X_i)
++\frac{\mathbb 1\{W_i=\pi(X_i)\}}{P\!\big(W_i=\pi(X_i)\mid X_i\big)}\big(Y_i-\hat\mu_{\pi(X_i)}(X_i)\big)\Big].
+$$
+
+For the *ship decision*, only the region where two policies disagree contributes, so the comparison is
+tighter than either value — directly the "new ranker vs status quo" question:
+
+$$
+\hat\Delta(\hat\pi,\pi_0)=\frac1n\sum_i\big(\hat\pi(X_i)-\pi_0(X_i)\big)\,\hat\Gamma_i,
+\qquad \hat\Delta(\mathbf 1,\mathbf 0)=\text{ATE}.
+$$
+
+```python
+v_treat_all = ope.dr_value(treat_all, ...)   # the do-nothing-clever baseline
+v_threshold = ope.dr_value(threshold_pi, ...)
+v_tree      = ope.dr_value(policy_tree, ...)
+benefit     = ope.dr_compare(policy_tree, status_quo, gamma)
+```
+
+::: {.callout-note appearance="simple"}
+**The OPE superpower.** On real data you cannot price a policy you never deployed. In Lyra the engine
+*authors* the policy value, so OPE recovers a **counterfactual** ranking's true worth from logged data and
+is graded against it — the same logged-data-to-true-value move every production team wishes it could trust,
+here proven against a known answer.
+:::
+
+## Certification {#sec-certify}
+
+Run the stack through [the harness](harness.qmd) on a heterogeneous world and the verdict is *measured*.
+Everything sits on the DR score, which itself certifies: $\frac1n\sum_i\hat\Gamma_i = [\text{AIPW ATE}]{}$
+recovers **+0.49 vs the planted truth +0.50**. Heterogeneity is real — **RATE (AUTOC) $z=42$**, far past
+any threshold, so prioritization is genuinely targetable, not noise.
+
+Net-of-cost policy value, with the DR estimate tracking the engine's true value at each rung:
+
+| policy | net-of-cost value | reads |
+|---|---|---|
+| treat-all | $+0.19$ | [leaves value on the table]{.bias} |
+| **threshold** $\mathbb 1\{\hat\tau>C\}$ | $+0.54$ (~2.9×) | [**certified**]{.cert} |
+| policy tree | $+0.50$ | [**certified**]{.cert} |
+
+And the money shot — pricing a counterfactual policy from logged data only:
+
+| OPE estimator | recovered value | vs truth $+0.730$ |
+|---|---|---|
+| IPS | $+0.742 \pm 0.051$ | covers, wide |
+| **DR** | $+0.736 \pm 0.031$ | [**certified**]{.cert} — ~2× tighter |
+
+The doubly-robust value recovers the true policy value tighter than IPS, the threshold and tree policies are
+worth ~2.9× treat-all, and treat-all is the deliberately-[biased]{.bias} comparator that ignores the
+heterogeneity RATE just proved is there. Same logged data, same $\hat\Gamma_i$ — only the policy and the
+aggregation change. See [CATE](cate.qmd) for the $\hat\tau(x)$ surface this chapter targets.

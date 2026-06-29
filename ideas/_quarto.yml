@@ -1,0 +1,181 @@
+project:
+  type: book
+  output-dir: _book
+
+# ---------------------------------------------------------------------------
+# Causal Experimentation — the "bridge book":
+# causal inference as practiced INSIDE a modern experimentation platform.
+# Organized by EXPERIMENTATION PROBLEM, not by method family.
+# Doubles as the conceptual documentation for Lyra (platform) + Vega (DGP/sim).
+#
+# Two cross-cutting conventions every chapter follows (baked into the stubs):
+#   1. Opens with "The platform problem" — what does this method solve in prod?
+#   2. Ends with "Validate against ground truth (Vega)" — recover a known effect.
+# ---------------------------------------------------------------------------
+
+book:
+  title: "Causal Experimentation"
+  subtitle: "Causal inference as practiced inside a modern experimentation platform"
+  author: "Daniel Redel"
+  date: today
+  search: true
+  repo-url: https://github.com/dannyredel/causal-experimentation   # <- change
+  repo-actions: [edit, issue]
+  sidebar:
+    style: docked
+    collapse-level: 1
+  page-footer:
+    left: "© Daniel Redel"
+    right: "Built with [Quarto](https://quarto.org)"
+
+  chapters:
+    - index.qmd
+
+    - part: "I — Foundations"
+      chapters:
+        - 00-foundational/01-experimentation-mindset.qmd
+        - 00-foundational/02-potential-outcomes.qmd
+        - 00-foundational/03-estimands.qmd
+        - 00-foundational/04-randomization-and-identification.qmd
+        - 00-foundational/05-statistics-review.qmd
+        - 00-foundational/06-frequentist-vs-bayesian.qmd
+        - 00-foundational/07-anatomy-of-a-platform.qmd
+
+    - part: "II — The Core Readout"
+      chapters:
+        - 05-power-and-decisions/01-ate-three-ways.qmd
+        - 05-power-and-decisions/02-variance-reduction.qmd
+        - 05-power-and-decisions/03-ratio-metrics-and-delta.qmd
+        - 05-power-and-decisions/04-cluster-robust-inference.qmd
+        - 05-power-and-decisions/05-power-and-mde.qmd
+        - 05-power-and-decisions/06-decision-framework.qmd
+
+    - part: "III — Trustworthy Experiments"
+      chapters:
+        - 12-trustworthy-and-metrics/01-srm-and-diagnostics.qmd
+        - 12-trustworthy-and-metrics/02-aa-testing.qmd
+        - 12-trustworthy-and-metrics/03-multiple-comparisons.qmd
+        - 12-trustworthy-and-metrics/04-metric-design-and-governance.qmd
+        - 12-trustworthy-and-metrics/05-novelty-and-primacy.qmd
+        - 12-trustworthy-and-metrics/06-winners-curse.qmd
+
+    - part: "IV — Sequential & Always-Valid"
+      chapters:
+        - 04-sequential-anytime-valid/01-the-peeking-problem.qmd
+        - 04-sequential-anytime-valid/02-group-sequential.qmd
+        - 04-sequential-anytime-valid/03-msprt.qmd
+        - 04-sequential-anytime-valid/04-confidence-sequences.qmd
+        - 04-sequential-anytime-valid/05-e-values-and-betting.qmd
+        - 04-sequential-anytime-valid/06-bayesian-ab.qmd
+
+    - part: "V — Modern Causal ML (Unconfoundedness)"
+      chapters:
+        - 01-causal-ml-dml/01-unconfoundedness.qmd
+        - 01-causal-ml-dml/02-ipw-and-overlap.qmd
+        - 01-causal-ml-dml/03-aipw-and-tmle.qmd
+        - 01-causal-ml-dml/04-double-machine-learning.qmd
+
+    - part: "VI — Heterogeneous Effects (CATE / HTE / Uplift)"
+      chapters:
+        - 11-hte-metalearners-forests/01-cate-estimands.qmd
+        - 11-hte-metalearners-forests/02-meta-learners.qmd
+        - 11-hte-metalearners-forests/03-causal-forests-grf.qmd
+        - 11-hte-metalearners-forests/04-dml-for-cate.qmd
+        - 11-hte-metalearners-forests/05-bayesian-causal-forests.qmd
+        - 11-hte-metalearners-forests/06-uplift-trees-and-qini.qmd
+
+    - part: "VII — Evaluation, Ranking & Policy"
+      chapters:
+        - 06-evaluation-and-ranking/01-evaluating-cate.qmd
+        - 06-evaluation-and-ranking/02-rate-and-calibration.qmd
+        - 06-evaluation-and-ranking/03-policy-learning.qmd
+        - 06-evaluation-and-ranking/04-interleaving-for-ranking.qmd
+
+    - part: "VIII — Interference & Marketplaces"
+      chapters:
+        - 02-marketplace-interference/01-when-sutva-breaks.qmd
+        - 02-marketplace-interference/02-exposure-mappings.qmd
+        - 02-marketplace-interference/03-cluster-randomization.qmd
+        - 02-marketplace-interference/04-two-sided-randomization.qmd
+
+    - part: "IX — Switchback Experiments"
+      chapters:
+        - 03-switchback/01-why-switchback.qmd
+        - 03-switchback/02-time-region-design.qmd
+        - 03-switchback/03-carryover-robust-estimation.qmd
+        - 03-switchback/04-optimal-switchback-design.qmd
+
+    - part: "X — Quasi-Experimental"
+      chapters:
+        - 13-quasi-experimental/01-difference-in-differences.qmd
+        - 13-quasi-experimental/02-synthetic-control.qmd
+        - 13-quasi-experimental/03-causalimpact-bsts.qmd
+        - 13-quasi-experimental/04-rdd-and-its.qmd
+        - 13-quasi-experimental/05-iv-and-noncompliance.qmd
+
+    - part: "XI — Incrementality & Attribution"
+      chapters:
+        - 10-incrementality-attribution/01-ghost-ads-and-psa.qmd
+        - 10-incrementality-attribution/02-geo-experiments.qmd
+        - 10-incrementality-attribution/03-incrementality-vs-mmm.qmd
+        - 10-incrementality-attribution/04-attribution-models.qmd
+
+    - part: "XII — Pricing, Demand & LLM Agents"
+      chapters:
+        - 07-demand-pricing-and-llm-agents/01-demand-and-elasticity.qmd
+        - 07-demand-pricing-and-llm-agents/02-price-experiments.qmd
+        - 07-demand-pricing-and-llm-agents/03-structural-vs-experimental.qmd
+        - 07-demand-pricing-and-llm-agents/04-wtp-and-conjoint.qmd
+        - 07-demand-pricing-and-llm-agents/05-llm-synthetic-respondents.qmd
+
+    - part: "XIII — Long-Term Effects & Surrogates"
+      chapters:
+        - 09-long-term-and-surrogates/01-short-vs-long-term.qmd
+        - 09-long-term-and-surrogates/02-surrogate-index.qmd
+        - 09-long-term-and-surrogates/03-downstream-proxy-metrics.qmd
+
+    - part: "XIV — Personalization & Platform Craft"
+      chapters:
+        - 08-personalization-and-platform-craft/01-contextual-bandits.qmd
+        - 08-personalization-and-platform-craft/02-post-adaptive-inference.qmd
+        - 08-personalization-and-platform-craft/03-building-lyra.qmd
+        - 08-personalization-and-platform-craft/04-the-estimator-interface.qmd
+        - 08-personalization-and-platform-craft/05-scorecard-and-decisions.qmd
+
+  appendices:
+    - appendices/A-simulation-and-validation-vega.qmd
+    - appendices/B-notation-and-estimand-glossary.qmd
+    - appendices/C-tooling-and-environment.qmd
+
+bibliography: references.bib
+# csl: chicago-author-date.csl   # optional: drop a CSL file in to control style
+
+format:
+  html:
+    theme:
+      - cosmo
+      - theme.scss
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: show
+    code-tools: true
+    code-link: true
+    fig-width: 7
+    fig-height: 4.5
+  # PDF is optional; needs a LaTeX toolchain (quarto install tinytex).
+  # Uncomment to enable a print edition.
+  # pdf:
+  #   documentclass: scrbook
+  #   number-sections: true
+  #   keep-tex: false
+
+# Default execution engine is Jupyter (Python). Individual R chapters can opt in
+# by adding `engine: knitr` to their YAML front matter.
+engine: jupyter
+
+execute:
+  freeze: auto      # cache outputs; only re-run changed chapters
+  echo: true
+  warning: false
+  message: false

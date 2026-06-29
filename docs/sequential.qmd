@@ -1,0 +1,133 @@
+---
+title: "Sequential & always-valid inference"
+subtitle: "Peek whenever you like — and across many experiments — without inflating error."
+---
+
+::: {.lead}
+A fixed-horizon test is valid at *one* pre-committed sample size; look early and stop on the first
+significant reading and your error rate climbs — all the way to 1 if you wait long enough. This chapter
+builds the cure: **confidence sequences** that hold *simultaneously over all $t$*, the **time-uniform
+multiplier** you pay for that privilege (the peeking tax), and the **Benjamini–Hochberg** layer that keeps
+the false-discovery rate honest across a whole portfolio of experiments. *(Math recycled from
+`notation/anytime-valid.md`.)*
+:::
+
+## The peeking problem {#sec-peeking}
+
+A fixed-horizon p-value $p_n$ is valid only at a pre-committed $n$: under $H_0$, $P_{\theta_0}(p_n\le s)\le
+s$. The catch is the *stopping rule*. Monitor a stream and **reject the first time $p_n\le\alpha$**, and the
+realized type-I error inflates — and by the law of the iterated logarithm it is *guaranteed* to hit any
+fixed $\alpha$ if you wait long enough:
+
+$$
+\Pr_{H_0}\!\big(\exists\, n:\ p_n \le \alpha\big) \xrightarrow[\ n\to\infty\ ]{} 1 .
+$$
+
+At $n=10^4$, daily peeking inflates a nominal $5\%$ test to $30\%$–$50\%$. This is the [biased]{.bias}
+default the platform must replace: the analyst *will* look early, so the inference has to survive looking.
+
+## Always-valid p-values & confidence sequences {#sec-cs}
+
+The fix is to control error *over all times at once*. A sequence $(p_n)$ is an **always-valid p-value
+process** if for *any* (possibly infinite) stopping time $T$,
+
+$$
+\forall s\in[0,1]:\quad P_{\theta_0}(p_T\le s)\le s .
+$$
+
+The interval-valued dual is a **confidence sequence (CS)** — a sequence of intervals $(CS_t)$ with
+**time-uniform** coverage:
+
+$$
+\Pr\big(\forall t\ge 1:\ \tau\in CS_t\big)\ \ge\ 1-\alpha .
+$$
+
+The quantifier is *inside* the probability — every interval in the whole sequence traps $\tau$
+simultaneously with probability $1-\alpha$, so any stopping rule, however data-dependent, is safe. The
+construction rests on a **non-negative supermartingale** $M_t$ under $H_0$ and **Ville's inequality**, the
+sequential analogue of Markov's:
+
+$$
+\Pr\big(\exists\, t:\ M_t \ge 1/\alpha\big)\ \le\ \alpha .
+$$
+
+The mSPRT mixes the SPRT likelihood ratio over an effect prior $\pi$, giving a martingale $\Lambda_t^\pi$
+whose running max yields a monotone always-valid $p_t=(\max\{1,\sup_{m\le t}\Lambda_m^\pi\})^{-1}$. Lyra's
+default is the **asymptotic CS** — a $\log\log t$ widening of the ordinary CLT interval, the practical
+drop-in.
+
+::: {.callout-note appearance="simple"}
+**The always-valid property, in one line.** Coverage holds *for all $t$ at once*, not at one pre-chosen
+$n$ — so you may stop the instant the CS excludes $0$ (or covers it) and the $1-\alpha$ guarantee still
+holds.
+:::
+
+## The peeking tax: time-uniform multiplier vs the fixed-$n$ $z$ {#sec-tax}
+
+The CS is centred on the **same point** as the fixed-$n$ estimate — it never moves the estimate, only the
+width. The concrete sub-Gaussian CS for a mean (Howard et al. 2022) is
+
+$$
+\bar X_t\ \pm\ 1.7\sqrt{\frac{\log\log(2t)+0.72\,\log(10.4/\alpha)}{t}},
+$$
+
+versus the fixed-$n$ half-width $z_{1-\alpha/2}\,\sigma/\sqrt t$. The width is $O\!\big(\sqrt{t^{-1}\log\log
+t}\big)$ — the **LIL rate**. That extra $\log\log t$ over the fixed-$n$ $\sqrt{1/t}$ is the **peeking tax**:
+the multiplier in front is strictly larger than $z$, growing ever-so-slowly with $t$, so the CS is **always
+wider** than the fixed-$n$ CI at the same $t$. You pay it once, in width, in exchange for the freedom to
+stop anywhere; and because the boundary is *curved* (normal-mixture / stitched, not linear), the width still
+shrinks to $0$.
+
+```python
+from lyra.sequential import asymptotic_cs
+
+# same point estimate, time-uniform half-width > z * se
+cs = asymptotic_cs(stream, alpha=0.05, rho2=cfg.anytime_valid.rho2)
+lo_t, hi_t = cs.interval(t)          # widens vs fixed-n by the log log t factor
+stop = not (lo_t <= 0 <= hi_t)        # peeking-safe stop: CS excludes 0
+```
+
+## Portfolio FDR: Benjamini–Hochberg {#sec-fdr}
+
+Within an experiment the CS controls error *over time*; **across** a portfolio of experiments the cross-cutting
+hazard is multiplicity. Testing $m$ experiments at $\alpha$ each lets false positives accumulate. The
+**Benjamini–Hochberg** procedure controls the **false-discovery rate** — the expected fraction of rejections
+that are null. Sort the per-experiment p-values $p_{(1)}\le\dots\le p_{(m)}$ and reject the $k$ smallest,
+where
+
+$$
+k = \max\Big\{ i :\ p_{(i)} \le \tfrac{i}{m}\,\alpha \Big\},
+\qquad
+\mathrm{FDR}=\mathbb{E}\!\left[\frac{V}{\max(R,1)}\right]\le \frac{m_0}{m}\,\alpha \le \alpha .
+$$
+
+Each experiment hands BH an always-valid $p_T$ (peeking-safe within itself); BH then layers FDR control on
+top, so the *portfolio* scorecard's discovery rate is governed even when dozens of A/A nulls and decoys run
+alongside the live treatments. The two layers compose: time-uniform inside, BH across. This lives in
+`lyra/diagnostics.py`.
+
+## Certification {#sec-certify}
+
+No mature Python package implements anytime-valid confidence sequences, so Lyra **built and validated its
+own** — which means it must clear [the harness](harness.qmd) like any other estimator. Two checks pin it
+down.
+
+**Coverage and the tax.** On a planted-$\tau$ world, the CS [covers the truth]{.cert} at its nominal rate
+*and* is measurably **wider than the fixed-$n$ CI** at every $t$ — the peeking tax shows up as a number, not
+a slogan.
+
+**Peeking safety.** Run an **A/A** ($\tau=0$) and peek *every day*. The verdict is unambiguous and *measured*:
+
+| monitoring | A/A type-I over the horizon | reads |
+|---|---|---|
+| fixed-$n$ test, peeked daily | inflates toward $1$ (LIL) | [uncertified]{.bias} |
+| **confidence sequence** | CS covers $0$ on **every** day | [**certified**]{.cert} |
+
+The fixed-horizon test peeked daily is confidently wrong by construction; the CS's interval traps $0$ at
+*every* look, so a daily-peeking analyst never falsely flags. That is the green badge: the CS is
+[certified]{.cert} for continuous monitoring exactly where naive fixed-$n$ peeking is [uncertified]{.bias}.
+The width it sweeps as the [replayed](harness.qmd) clock advances is the peeking tax made visible — the
+price of never having to pre-commit a horizon.
+
+The companion question — *given* you may stop early, how the stopping rule shapes the effect estimate and the
+required sample size — is the subject of [power & decisions](power.qmd).

@@ -1,0 +1,11 @@
+.git
+__pycache__/
+*.pyc
+events/day=*
+vega.duckdb
+metrics/target
+metrics/dbt_packages
+paper-library/pdfs/*.pdf
+frontend/node_modules
+.pytest_cache
+.venv

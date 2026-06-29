@@ -1,0 +1,146 @@
+---
+title: "Power, sizing & decisions"
+subtitle: "Sizing an experiment two ways — NHST power vs decision-theoretic test-and-roll — and the rule that ships."
+---
+
+::: {.lead}
+Before a single unit is assigned, two questions must be answered: how big must the test be, and what makes a
+win a win. This chapter walks the classical power/MDE machinery, the winner's curse that ambushes any
+underpowered read (Type-S/M), the decision-theoretic alternative that sizes for *profit* rather than
+significance, and the ship rule that closes the loop. Because Lyra knows the truth, every one of these is a
+*measured* claim, not a promise. *(Math recycled from `notation/{power-mde,test-and-roll}.md`.)*
+:::
+
+## Classical power & the MDE {#sec-power}
+
+Fix a two-sample test of a difference $\delta$ (the **minimum detectable effect**), within-arm SD $\sigma$,
+level $\alpha$, and power $1-\beta$. The per-arm sample size is
+
+$$
+n_{\text{per arm}}=\frac{(z_{1-\alpha/2}+z_{1-\beta})^2\,2\sigma^2}{\delta^2}
+\ \approx\ \frac{16\,\sigma^2}{\delta^2}\qquad(\alpha{=}0.05,\ 1-\beta{=}0.8;\ \text{Lehr's rule}).
+$$
+
+The $16\sigma^2/\delta^2$ shorthand makes the trade-offs legible: $n\propto 1/\delta^2$ (halve the MDE,
+**quadruple** the sample), $n\propto\sigma^2$ (so variance reduction via CUPED/DML buys power directly — see
+[metrics](metrics.qmd)), and $n$ rises *steeply* with power because $z_{1-\beta}$ moves fast in the tail. The
+calculator inverts the same identity to read the **MDE** at a fixed budget,
+
+$$
+\delta_{\min}=(z_{1-\alpha/2}+z_{1-\beta})\,\sigma\sqrt{\tfrac{2}{n_{\text{per arm}}}},
+$$
+
+and the only knob separating a one-sided from a two-sided design is $z_{1-\alpha}$ vs $z_{1-\alpha/2}$ — a
+two-sided test, the safe default, always demands *more* units than the one-sided number a vendor quotes.
+
+```python
+def required_n(delta, sigma, alpha=0.05, power=0.8, two_sided=True):
+    z_a = norm.ppf(1 - alpha / 2) if two_sided else norm.ppf(1 - alpha)
+    z_b = norm.ppf(power)
+    n_arm = (z_a + z_b) ** 2 * 2 * sigma ** 2 / delta ** 2
+    return 2 * ceil(n_arm)            # total across both arms
+```
+
+## The winner's curse — Type-S & Type-M {#sec-typesm}
+
+Power is not just a budgeting concern; it governs *how wrong a significant result is*. Gelman–Carlin (2014)
+split the failure into two errors conditional on crossing the significance bar:
+
+- **Type-M (magnitude)** — the **exaggeration ratio** $\;\mathbb{E}\big[\,|\hat\delta|\,\big|\,\text{significant}\big]\big/|\delta|$, the factor by which a "significant" estimate overstates the truth.
+- **Type-S (sign)** — $\Pr(\text{wrong sign}\mid\text{significant})$, the chance the headline points the wrong way.
+
+Both blow up as power falls: a filter that only lets large $|\hat\delta|$ through *selects* for noise that
+happened to land far from zero. At single-digit power the exaggeration is severe — published replications
+have crushed a "55% lift" to a non-significant ~0.2%. The estimate that survives an underpowered test is
+structurally [biased]{.bias} upward, and the bias is not a modelling error you can adjust away — it is a
+property of the selection.
+
+::: {.callout-warning appearance="simple"}
+**An underpowered-significant read overstates the effect.** The very $p<0.05$ that feels like a win is, at low
+power, evidence the effect was *inflated* on the way through the filter. On real data this is invisible —
+there is no truth to compare against. Lyra can **measure** it: knowing $\delta$, the harness reports the
+realized Type-M ratio. At a design with $\approx 29\%$ power it comes back $\approx 1.83\times$ — the average
+significant estimate is nearly double the planted effect.
+:::
+
+## SRM — the trust guardrail {#sec-srm}
+
+Before any effect is read, the split itself must be checked. **Sample Ratio Mismatch** compares the *designed*
+allocation $\rho$ against the realized arm counts $(n_T,n_C)$ with a one-degree-of-freedom $\chi^2$:
+
+$$
+\chi^2=\sum_{k\in\{T,C\}}\frac{(n_k-\mathbb{E}[n_k])^2}{\mathbb{E}[n_k]},
+\qquad \mathbb{E}[n_T]=\rho\,(n_T+n_C).
+$$
+
+A minuscule p-value means the assignment, logging, or triggering is broken — and *no* downstream estimate
+from that run is trustworthy, however clean its interval looks. It is an emitter invariant on the
+[event log](metrics.qmd), checked on realized arm shares before the scorecard renders. A planted 48:52
+mis-split on a ~50k run lands at $\chi^2\approx 22.8$ ($p\approx 2\times10^{-6}$) — caught loudly, exactly
+as intended.
+
+## The decision-theoretic alternative — test & roll {#sec-testroll}
+
+NHST asks "is the difference significant?" Feit–Berman (2019) ask the question a business actually faces:
+over a finite population $N$, what test size **maximizes total profit** — test on some, then *roll the winner*
+to the rest? With Gaussian responses $Y_j\sim N(m_j,s^2)$ and priors $m_j\sim N(\mu,\sigma^2)$, the
+profit-maximizing per-arm size is
+
+$$
+n^*=\sqrt{\tfrac{N}{4}\big(\tfrac{s}{\sigma}\big)^2+\tfrac34\big(\tfrac{s}{\sigma}\big)^4}-\tfrac34\big(\tfrac{s}{\sigma}\big)^2
+\ \le\ \frac{\sqrt N\,s}{2\sigma}.
+$$
+
+Three properties invert the NHST instinct: the test **scales with $\sqrt N$** (and is always smaller than
+$N$), it grows with the *SD* $s$ rather than the variance $s^2$ (so noisy metrics get *smaller* tests, not
+the unrunnable ones NHST demands), and the decision rule is simply **pick the winner** — $\delta(y_1,y_2)=\mathbb{1}\{y_1>y_2\}$,
+no significance threshold at all. When a prior is unavailable, Kawato–Sakaguchi (2026) recover a prior-free
+**rule of thirds**,
+
+$$
+m^*\approx \tfrac{N}{3}\quad(\text{test }\sim\tfrac13,\ \text{roll }\sim\tfrac23),
+$$
+
+exact for Gaussian known-variance and a good approximation otherwise — a plug-and-play allocation that needs
+no elicitation. This is precisely Lyra's ramp: test on a slice, roll the winner, and the OEC *is* the profit
+being maximized.
+
+```python
+def test_and_roll_n(N, s, sigma):
+    r = s / sigma
+    return np.sqrt(N / 4 * r**2 + 0.75 * r**4) - 0.75 * r**2   # per arm
+```
+
+## The ship rule {#sec-ship}
+
+Sizing decides *whether the test can see*; the ship rule decides *what to do with what it saw*. Lyra's
+DECIDED state records an explicit, three-clause rule — a design ships only when **all** hold:
+
+1. **OEC superiority** — the primary metric's interval clears zero in the right direction;
+2. **guardrails non-inferior** — every guardrail-with-NIM stays above its margin (a guardrail can only *veto*,
+   so it needs no $\alpha$-correction);
+3. **certified-vs-truth** — the design landed on nominal power and coverage in the harness.
+
+Clause (3) is the one a real platform cannot write. A correctly-sized design is [certified]{.cert} when its
+simulated reject-rate matches the nominal power it was sized for; an underpowered-but-significant read is
+[biased]{.bias} — it crosses the bar, but the Type-M inflation above means the number it ships is wrong.
+
+## Certification {#sec-certify}
+
+Everything in this chapter is graded by [the harness](harness.qmd): power is simulation-based by definition
+(simulate under $H_1$, count rejections), so the closed-form $n$ can be *verified*, not just trusted.
+
+| check | result | reads |
+|---|---|---|
+| required-$N$, Python vs JS calculator (two-sided) | $\approx 494{,}605$ vs $494{,}605$ — parity | [certified]{.cert} |
+| one-sided reference (Spotify SSC) | $\approx 360{,}629$ | matches |
+| harness power at the required-$N$ design | lands on nominal $1-\beta$ | [certified]{.cert} |
+| test-and-roll vs NHST size | $\approx 1{,}509$ vs $6{,}279$ ($\sim4.2\times$ smaller) | profit-sized |
+| Type-M at $\approx 29\%$ power | exaggeration $\approx 1.83\times$ | [biased]{.bias} |
+| SRM on a mis-split | $\chi^2\approx 22.8$ | caught |
+
+The headline parity — the Python `required_n` and the dashboard's JS calculator agree to the unit at the
+two-sided default, while the one-sided Spotify figure sits exactly where the $z_{1-\alpha}$ swap predicts —
+is what makes the power-gate honest: the number that warns you at DRAFT is the same number the harness
+certifies lands on power. The fixed-sample story stops here; carrying the same decision across *continuous*
+monitoring without spending the budget is the subject of [sequential](sequential.qmd).
