@@ -29,6 +29,9 @@ paper-library/DML Export Notion/
 
 # Data (do not vendor real datasets)
 data/
+# …but DO ship the frontend's static snapshot (the deploy's read-only data source)
+!frontend/public/data/
+!frontend/public/data/*.json
 *.parquet
 !events/.gitkeep
 

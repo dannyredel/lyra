@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "run_name": "mvp_baseline",
+    "horizon_days": 30,
+    "allocation": 0.35,
+    "alpha": 0.05,
+    "n_users": 8000,
+    "note": "fixed-allocation demo world (clean arms; ground truth from shadow runs)"
+  },
+  "experiments": [
+    {
+      "id": "exp_reward_sizing",
+      "advertiser": "adv_A",
+      "type": "reward_sizing",
+      "randomization": "user",
+      "primary_metric": "margin_per_active_user",
+      "allocation": 0.35,
+      "naive": {
+        "estimator": "naive",
+        "point": -0.267418,
+        "ci_low": -0.312189,
+        "ci_high": -0.222647,
+        "se": 0.02284,
+        "p_value": 1.8759327488829895e-31,
+        "n_treatment": 3433,
+        "n_control": 7235
+      },
+      "corrected": {
+        "estimator": "budget_split",
+        "point": -0.295762,
+        "ci_low": -0.339292,
+        "ci_high": -0.252232,
+        "se": 0.022207,
+        "p_value": 4.007134511986428e-40,
+        "n_treatment": 3433,
+        "n_control": 7235
+      },
+      "ground_truth": -0.321498,
+      "srm": {
+        "treatment": 3839,
+        "control": 7235,
+        "realized_share": 0.3467,
+        "ok": true
+      },
+      "decision": {
+        "status": "rolled_back",
+        "label": "Guardrail breach \u2014 rolled back",
+        "reason": "breached: payout_cost"
+      }
+    },
+    {
+      "id": "exp_offer_ranking",
+      "advertiser": "adv_B",
+      "type": "ranking",
+      "randomization": "user",
+      "primary_metric": "completions_per_user",
+      "allocation": 0.35,
+      "naive": {
+        "estimator": "naive",
+        "point": 0.024084,
+        "ci_low": -0.093938,
+        "ci_high": 0.142106,
+        "se": 0.060207,
+        "p_value": 0.6891513861537946,
+        "n_treatment": 3782,
+        "n_control": 7292
+      },
+      "corrected": null,
+      "ground_truth": 0.0,
+      "srm": {
+        "treatment": 3782,
+        "control": 7292,
+        "realized_share": 0.3415,
+        "ok": true
+      },
+      "decision": {
+        "status": "inconclusive",
+        "label": "No significant effect",
+        "reason": "CI covers zero"
+      }
+    },
+    {
+      "id": "aa_null_1",
+      "advertiser": "adv_C",
+      "type": "aa",
+      "randomization": "user",
+      "primary_metric": "\u2014",
+      "allocation": 0.5,
+      "naive": {
+        "estimator": "naive",
+        "point": -0.00355,
+        "ci_low": -0.081926,
+        "ci_high": 0.074826,
+        "se": 0.039984,
+        "p_value": 0.9292614343130908,
+        "n_treatment": 5502,
+        "n_control": 5572
+      },
+      "corrected": null,
+      "ground_truth": 0.0,
+      "srm": {
+        "treatment": 5502,
+        "control": 5572,
+        "realized_share": 0.4968,
+        "ok": true
+      },
+      "decision": {
+        "status": "inconclusive",
+        "label": "No significant effect",
+        "reason": "CI covers zero"
+      }
+    },
+    {
+      "id": "aa_null_2",
+      "advertiser": "adv_D",
+      "type": "aa",
+      "randomization": "cluster",
+      "primary_metric": "\u2014",
+      "allocation": 0.5,
+      "naive": {
+        "estimator": "naive",
+        "point": -0.030613,
+        "ci_low": -0.066524,
+        "ci_high": 0.005297,
+        "se": 0.01832,
+        "p_value": 0.09474582484302797,
+        "n_treatment": 5704,
+        "n_control": 5370
+      },
+      "corrected": {
+        "estimator": "cluster",
+        "point": -0.030613,
+        "ci_low": -0.0635,
+        "ci_high": 0.002274,
+        "se": 0.016779,
+        "p_value": 0.06808528925876553,
+        "n_treatment": 5704,
+        "n_control": 5370
+      },
+      "ground_truth": 0.0,
+      "srm": {
+        "treatment": 5704,
+        "control": 5370,
+        "realized_share": 0.5151,
+        "ok": true
+      },
+      "decision": {
+        "status": "inconclusive",
+        "label": "No significant effect",
+        "reason": "CI covers zero"
+      }
+    }
+  ]
+}

@@ -1,0 +1,658 @@
+{
+  "meta": {
+    "n_offers": 50,
+    "n_advertisers": 12,
+    "n_clusters": 80,
+    "categories": [
+      "puzzle",
+      "casino",
+      "rpg",
+      "survey",
+      "shopping"
+    ]
+  },
+  "offers": [
+    {
+      "offer_id": "of_000",
+      "advertiser": "adv_A",
+      "category": "rpg",
+      "payout": 3.555,
+      "reward": 2.489,
+      "budget_cap": 781.1
+    },
+    {
+      "offer_id": "of_001",
+      "advertiser": "adv_B",
+      "category": "puzzle",
+      "payout": 2.434,
+      "reward": 1.704,
+      "budget_cap": 208.8
+    },
+    {
+      "offer_id": "of_002",
+      "advertiser": "adv_C",
+      "category": "casino",
+      "payout": 5.313,
+      "reward": 3.719,
+      "budget_cap": 799.4
+    },
+    {
+      "offer_id": "of_003",
+      "advertiser": "adv_D",
+      "category": "shopping",
+      "payout": 2.569,
+      "reward": 1.798,
+      "budget_cap": 605.4
+    },
+    {
+      "offer_id": "of_004",
+      "advertiser": "adv_E",
+      "category": "casino",
+      "payout": 3.255,
+      "reward": 2.279,
+      "budget_cap": 409.4
+    },
+    {
+      "offer_id": "of_005",
+      "advertiser": "adv_F",
+      "category": "puzzle",
+      "payout": 2.547,
+      "reward": 1.783,
+      "budget_cap": 499.1
+    },
+    {
+      "offer_id": "of_006",
+      "advertiser": "adv_G",
+      "category": "survey",
+      "payout": 4.197,
+      "reward": 2.938,
+      "budget_cap": 335.2
+    },
+    {
+      "offer_id": "of_007",
+      "advertiser": "adv_H",
+      "category": "survey",
+      "payout": 2.081,
+      "reward": 1.456,
+      "budget_cap": 280.6
+    },
+    {
+      "offer_id": "of_008",
+      "advertiser": "adv_I",
+      "category": "survey",
+      "payout": 1.924,
+      "reward": 1.347,
+      "budget_cap": 183.4
+    },
+    {
+      "offer_id": "of_009",
+      "advertiser": "adv_J",
+      "category": "rpg",
+      "payout": 1.698,
+      "reward": 1.188,
+      "budget_cap": 748.1
+    },
+    {
+      "offer_id": "of_010",
+      "advertiser": "adv_K",
+      "category": "shopping",
+      "payout": 2.59,
+      "reward": 1.813,
+      "budget_cap": 331.0
+    },
+    {
+      "offer_id": "of_011",
+      "advertiser": "adv_L",
+      "category": "puzzle",
+      "payout": 2.613,
+      "reward": 1.829,
+      "budget_cap": 520.4
+    },
+    {
+      "offer_id": "of_012",
+      "advertiser": "adv_A",
+      "category": "puzzle",
+      "payout": 2.893,
+      "reward": 2.025,
+      "budget_cap": 1125.4
+    },
+    {
+      "offer_id": "of_013",
+      "advertiser": "adv_B",
+      "category": "rpg",
+      "payout": 3.351,
+      "reward": 2.346,
+      "budget_cap": 477.8
+    },
+    {
+      "offer_id": "of_014",
+      "advertiser": "adv_C",
+      "category": "casino",
+      "payout": 2.064,
+      "reward": 1.445,
+      "budget_cap": 479.7
+    },
+    {
+      "offer_id": "of_015",
+      "advertiser": "adv_D",
+      "category": "puzzle",
+      "payout": 3.523,
+      "reward": 2.466,
+      "budget_cap": 1352.8
+    },
+    {
+      "offer_id": "of_016",
+      "advertiser": "adv_E",
+      "category": "casino",
+      "payout": 2.999,
+      "reward": 2.099,
+      "budget_cap": 477.7
+    },
+    {
+      "offer_id": "of_017",
+      "advertiser": "adv_F",
+      "category": "puzzle",
+      "payout": 0.925,
+      "reward": 0.647,
+      "budget_cap": 238.4
+    },
+    {
+      "offer_id": "of_018",
+      "advertiser": "adv_G",
+      "category": "rpg",
+      "payout": 0.916,
+      "reward": 0.641,
+      "budget_cap": 871.2
+    },
+    {
+      "offer_id": "of_019",
+      "advertiser": "adv_H",
+      "category": "shopping",
+      "payout": 1.628,
+      "reward": 1.139,
+      "budget_cap": 624.3
+    },
+    {
+      "offer_id": "of_020",
+      "advertiser": "adv_I",
+      "category": "rpg",
+      "payout": 0.931,
+      "reward": 0.652,
+      "budget_cap": 375.7
+    },
+    {
+      "offer_id": "of_021",
+      "advertiser": "adv_J",
+      "category": "shopping",
+      "payout": 2.056,
+      "reward": 1.439,
+      "budget_cap": 268.7
+    },
+    {
+      "offer_id": "of_022",
+      "advertiser": "adv_K",
+      "category": "shopping",
+      "payout": 4.325,
+      "reward": 3.027,
+      "budget_cap": 905.8
+    },
+    {
+      "offer_id": "of_023",
+      "advertiser": "adv_L",
+      "category": "shopping",
+      "payout": 6.823,
+      "reward": 4.776,
+      "budget_cap": 1049.9
+    },
+    {
+      "offer_id": "of_024",
+      "advertiser": "adv_A",
+      "category": "rpg",
+      "payout": 2.638,
+      "reward": 1.846,
+      "budget_cap": 572.1
+    },
+    {
+      "offer_id": "of_025",
+      "advertiser": "adv_B",
+      "category": "rpg",
+      "payout": 4.001,
+      "reward": 2.801,
+      "budget_cap": 211.5
+    },
+    {
+      "offer_id": "of_026",
+      "advertiser": "adv_C",
+      "category": "shopping",
+      "payout": 3.568,
+      "reward": 2.497,
+      "budget_cap": 218.5
+    },
+    {
+      "offer_id": "of_027",
+      "advertiser": "adv_D",
+      "category": "casino",
+      "payout": 2.612,
+      "reward": 1.828,
+      "budget_cap": 488.3
+    },
+    {
+      "offer_id": "of_028",
+      "advertiser": "adv_E",
+      "category": "shopping",
+      "payout": 1.236,
+      "reward": 0.865,
+      "budget_cap": 416.1
+    },
+    {
+      "offer_id": "of_029",
+      "advertiser": "adv_F",
+      "category": "rpg",
+      "payout": 5.637,
+      "reward": 3.946,
+      "budget_cap": 384.8
+    },
+    {
+      "offer_id": "of_030",
+      "advertiser": "adv_G",
+      "category": "puzzle",
+      "payout": 2.257,
+      "reward": 1.58,
+      "budget_cap": 975.3
+    },
+    {
+      "offer_id": "of_031",
+      "advertiser": "adv_H",
+      "category": "casino",
+      "payout": 1.812,
+      "reward": 1.269,
+      "budget_cap": 1946.2
+    },
+    {
+      "offer_id": "of_032",
+      "advertiser": "adv_I",
+      "category": "casino",
+      "payout": 2.136,
+      "reward": 1.495,
+      "budget_cap": 386.2
+    },
+    {
+      "offer_id": "of_033",
+      "advertiser": "adv_J",
+      "category": "shopping",
+      "payout": 2.795,
+      "reward": 1.956,
+      "budget_cap": 608.5
+    },
+    {
+      "offer_id": "of_034",
+      "advertiser": "adv_K",
+      "category": "puzzle",
+      "payout": 1.966,
+      "reward": 1.376,
+      "budget_cap": 3376.6
+    },
+    {
+      "offer_id": "of_035",
+      "advertiser": "adv_L",
+      "category": "shopping",
+      "payout": 2.363,
+      "reward": 1.654,
+      "budget_cap": 660.2
+    },
+    {
+      "offer_id": "of_036",
+      "advertiser": "adv_A",
+      "category": "rpg",
+      "payout": 1.237,
+      "reward": 0.866,
+      "budget_cap": 557.3
+    },
+    {
+      "offer_id": "of_037",
+      "advertiser": "adv_B",
+      "category": "casino",
+      "payout": 1.104,
+      "reward": 0.773,
+      "budget_cap": 100.5
+    },
+    {
+      "offer_id": "of_038",
+      "advertiser": "adv_C",
+      "category": "casino",
+      "payout": 3.484,
+      "reward": 2.439,
+      "budget_cap": 256.9
+    },
+    {
+      "offer_id": "of_039",
+      "advertiser": "adv_D",
+      "category": "survey",
+      "payout": 1.124,
+      "reward": 0.787,
+      "budget_cap": 80.7
+    },
+    {
+      "offer_id": "of_040",
+      "advertiser": "adv_E",
+      "category": "survey",
+      "payout": 1.521,
+      "reward": 1.065,
+      "budget_cap": 253.7
+    },
+    {
+      "offer_id": "of_041",
+      "advertiser": "adv_F",
+      "category": "shopping",
+      "payout": 1.79,
+      "reward": 1.253,
+      "budget_cap": 677.3
+    },
+    {
+      "offer_id": "of_042",
+      "advertiser": "adv_G",
+      "category": "casino",
+      "payout": 1.841,
+      "reward": 1.289,
+      "budget_cap": 350.6
+    },
+    {
+      "offer_id": "of_043",
+      "advertiser": "adv_H",
+      "category": "survey",
+      "payout": 1.776,
+      "reward": 1.243,
+      "budget_cap": 1051.5
+    },
+    {
+      "offer_id": "of_044",
+      "advertiser": "adv_I",
+      "category": "puzzle",
+      "payout": 4.006,
+      "reward": 2.804,
+      "budget_cap": 1120.7
+    },
+    {
+      "offer_id": "of_045",
+      "advertiser": "adv_J",
+      "category": "survey",
+      "payout": 2.187,
+      "reward": 1.531,
+      "budget_cap": 193.1
+    },
+    {
+      "offer_id": "of_046",
+      "advertiser": "adv_K",
+      "category": "rpg",
+      "payout": 1.297,
+      "reward": 0.908,
+      "budget_cap": 687.9
+    },
+    {
+      "offer_id": "of_047",
+      "advertiser": "adv_L",
+      "category": "shopping",
+      "payout": 2.697,
+      "reward": 1.888,
+      "budget_cap": 763.2
+    },
+    {
+      "offer_id": "of_048",
+      "advertiser": "adv_A",
+      "category": "survey",
+      "payout": 3.045,
+      "reward": 2.131,
+      "budget_cap": 96.7
+    },
+    {
+      "offer_id": "of_049",
+      "advertiser": "adv_B",
+      "category": "rpg",
+      "payout": 6.272,
+      "reward": 4.39,
+      "budget_cap": 1293.7
+    }
+  ],
+  "timeseries": [
+    {
+      "day": 0,
+      "active": 7677,
+      "conversions": 4647,
+      "arrivals": 8000,
+      "churn": 323,
+      "churned_cumulative": 323
+    },
+    {
+      "day": 1,
+      "active": 7476,
+      "conversions": 4621,
+      "arrivals": 106,
+      "churn": 307,
+      "churned_cumulative": 630
+    },
+    {
+      "day": 2,
+      "active": 7337,
+      "conversions": 4599,
+      "arrivals": 106,
+      "churn": 245,
+      "churned_cumulative": 875
+    },
+    {
+      "day": 3,
+      "active": 7188,
+      "conversions": 4555,
+      "arrivals": 106,
+      "churn": 255,
+      "churned_cumulative": 1130
+    },
+    {
+      "day": 4,
+      "active": 7053,
+      "conversions": 4554,
+      "arrivals": 106,
+      "churn": 241,
+      "churned_cumulative": 1371
+    },
+    {
+      "day": 5,
+      "active": 6914,
+      "conversions": 4531,
+      "arrivals": 106,
+      "churn": 245,
+      "churned_cumulative": 1616
+    },
+    {
+      "day": 6,
+      "active": 6812,
+      "conversions": 4499,
+      "arrivals": 106,
+      "churn": 208,
+      "churned_cumulative": 1824
+    },
+    {
+      "day": 7,
+      "active": 6709,
+      "conversions": 4481,
+      "arrivals": 106,
+      "churn": 209,
+      "churned_cumulative": 2033
+    },
+    {
+      "day": 8,
+      "active": 6608,
+      "conversions": 4463,
+      "arrivals": 106,
+      "churn": 207,
+      "churned_cumulative": 2240
+    },
+    {
+      "day": 9,
+      "active": 6512,
+      "conversions": 4389,
+      "arrivals": 106,
+      "churn": 202,
+      "churned_cumulative": 2442
+    },
+    {
+      "day": 10,
+      "active": 6428,
+      "conversions": 4424,
+      "arrivals": 106,
+      "churn": 190,
+      "churned_cumulative": 2632
+    },
+    {
+      "day": 11,
+      "active": 6343,
+      "conversions": 4388,
+      "arrivals": 106,
+      "churn": 191,
+      "churned_cumulative": 2823
+    },
+    {
+      "day": 12,
+      "active": 6283,
+      "conversions": 4356,
+      "arrivals": 106,
+      "churn": 166,
+      "churned_cumulative": 2989
+    },
+    {
+      "day": 13,
+      "active": 6201,
+      "conversions": 4387,
+      "arrivals": 106,
+      "churn": 188,
+      "churned_cumulative": 3177
+    },
+    {
+      "day": 14,
+      "active": 6157,
+      "conversions": 4353,
+      "arrivals": 106,
+      "churn": 150,
+      "churned_cumulative": 3327
+    },
+    {
+      "day": 15,
+      "active": 6072,
+      "conversions": 4317,
+      "arrivals": 106,
+      "churn": 191,
+      "churned_cumulative": 3518
+    },
+    {
+      "day": 16,
+      "active": 6020,
+      "conversions": 4289,
+      "arrivals": 106,
+      "churn": 158,
+      "churned_cumulative": 3676
+    },
+    {
+      "day": 17,
+      "active": 5968,
+      "conversions": 4300,
+      "arrivals": 106,
+      "churn": 158,
+      "churned_cumulative": 3834
+    },
+    {
+      "day": 18,
+      "active": 5933,
+      "conversions": 4277,
+      "arrivals": 106,
+      "churn": 141,
+      "churned_cumulative": 3975
+    },
+    {
+      "day": 19,
+      "active": 5898,
+      "conversions": 4289,
+      "arrivals": 106,
+      "churn": 141,
+      "churned_cumulative": 4116
+    },
+    {
+      "day": 20,
+      "active": 5849,
+      "conversions": 4252,
+      "arrivals": 106,
+      "churn": 155,
+      "churned_cumulative": 4271
+    },
+    {
+      "day": 21,
+      "active": 5802,
+      "conversions": 4252,
+      "arrivals": 106,
+      "churn": 153,
+      "churned_cumulative": 4424
+    },
+    {
+      "day": 22,
+      "active": 5769,
+      "conversions": 4249,
+      "arrivals": 106,
+      "churn": 139,
+      "churned_cumulative": 4563
+    },
+    {
+      "day": 23,
+      "active": 5743,
+      "conversions": 4222,
+      "arrivals": 106,
+      "churn": 132,
+      "churned_cumulative": 4695
+    },
+    {
+      "day": 24,
+      "active": 5706,
+      "conversions": 4234,
+      "arrivals": 106,
+      "churn": 143,
+      "churned_cumulative": 4838
+    },
+    {
+      "day": 25,
+      "active": 5656,
+      "conversions": 4204,
+      "arrivals": 106,
+      "churn": 156,
+      "churned_cumulative": 4994
+    },
+    {
+      "day": 26,
+      "active": 5626,
+      "conversions": 4197,
+      "arrivals": 106,
+      "churn": 136,
+      "churned_cumulative": 5130
+    },
+    {
+      "day": 27,
+      "active": 5604,
+      "conversions": 4183,
+      "arrivals": 106,
+      "churn": 128,
+      "churned_cumulative": 5258
+    },
+    {
+      "day": 28,
+      "active": 5580,
+      "conversions": 4171,
+      "arrivals": 106,
+      "churn": 130,
+      "churned_cumulative": 5388
+    },
+    {
+      "day": 29,
+      "active": 5553,
+      "conversions": 4183,
+      "arrivals": 106,
+      "churn": 133,
+      "churned_cumulative": 5521
+    }
+  ]
+}

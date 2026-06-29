@@ -1,0 +1,266 @@
+{
+  "id": "exp_offer_ranking",
+  "advertiser": "adv_B",
+  "type": "ranking",
+  "randomization": "user",
+  "primary_metric": "completions_per_user",
+  "allocation": 0.35,
+  "naive": {
+    "estimator": "naive",
+    "point": 0.024084,
+    "ci_low": -0.093938,
+    "ci_high": 0.142106,
+    "se": 0.060207,
+    "p_value": 0.6891513861537946,
+    "n_treatment": 3782,
+    "n_control": 7292
+  },
+  "corrected": null,
+  "ground_truth": 0.0,
+  "srm": {
+    "treatment": 3782,
+    "control": 7292,
+    "realized_share": 0.3415,
+    "ok": true
+  },
+  "decision": {
+    "status": "inconclusive",
+    "label": "No significant effect",
+    "reason": "CI covers zero"
+  },
+  "hypothesis": "A value-sorted offer ranker increases completions per user vs the relevance baseline. (No-op lever in the current engine.)",
+  "guardrails": [
+    {
+      "name": "payout_cost",
+      "rel_change": 0.0175,
+      "threshold_rel": 0.1,
+      "direction": "not_above",
+      "breached": false,
+      "computed": true
+    },
+    {
+      "name": "advertiser_roas",
+      "computed": false,
+      "note": "TODO (M4 incrementality leg)"
+    },
+    {
+      "name": "user_retention_d7",
+      "computed": false,
+      "note": "TODO (long-term outcomes)"
+    }
+  ],
+  "timeseries": [
+    {
+      "day": 0,
+      "point": 0.001216,
+      "ci_low": -0.009746,
+      "ci_high": 0.012178,
+      "n": 11074
+    },
+    {
+      "day": 1,
+      "point": 0.002106,
+      "ci_low": -0.006053,
+      "ci_high": 0.010265,
+      "n": 11074
+    },
+    {
+      "day": 2,
+      "point": 0.002081,
+      "ci_low": -0.004877,
+      "ci_high": 0.009039,
+      "n": 11074
+    },
+    {
+      "day": 3,
+      "point": 0.004036,
+      "ci_low": -0.002339,
+      "ci_high": 0.01041,
+      "n": 11074
+    },
+    {
+      "day": 4,
+      "point": 0.001355,
+      "ci_low": -0.004584,
+      "ci_high": 0.007294,
+      "n": 11074
+    },
+    {
+      "day": 5,
+      "point": 0.001203,
+      "ci_low": -0.004408,
+      "ci_high": 0.006813,
+      "n": 11074
+    },
+    {
+      "day": 6,
+      "point": 0.001468,
+      "ci_low": -0.003879,
+      "ci_high": 0.006815,
+      "n": 11074
+    },
+    {
+      "day": 7,
+      "point": 0.000807,
+      "ci_low": -0.004296,
+      "ci_high": 0.00591,
+      "n": 11074
+    },
+    {
+      "day": 8,
+      "point": 0.000977,
+      "ci_low": -0.003969,
+      "ci_high": 0.005923,
+      "n": 11074
+    },
+    {
+      "day": 9,
+      "point": 0.001441,
+      "ci_low": -0.00336,
+      "ci_high": 0.006241,
+      "n": 11074
+    },
+    {
+      "day": 10,
+      "point": 0.001738,
+      "ci_low": -0.002976,
+      "ci_high": 0.006451,
+      "n": 11074
+    },
+    {
+      "day": 11,
+      "point": 0.001634,
+      "ci_low": -0.002977,
+      "ci_high": 0.006246,
+      "n": 11074
+    },
+    {
+      "day": 12,
+      "point": 0.001472,
+      "ci_low": -0.003087,
+      "ci_high": 0.006032,
+      "n": 11074
+    },
+    {
+      "day": 13,
+      "point": 0.000817,
+      "ci_low": -0.003649,
+      "ci_high": 0.005283,
+      "n": 11074
+    },
+    {
+      "day": 14,
+      "point": 0.000726,
+      "ci_low": -0.003683,
+      "ci_high": 0.005136,
+      "n": 11074
+    },
+    {
+      "day": 15,
+      "point": 0.001084,
+      "ci_low": -0.00328,
+      "ci_high": 0.005449,
+      "n": 11074
+    },
+    {
+      "day": 16,
+      "point": 0.001399,
+      "ci_low": -0.002929,
+      "ci_high": 0.005727,
+      "n": 11074
+    },
+    {
+      "day": 17,
+      "point": 0.001398,
+      "ci_low": -0.002871,
+      "ci_high": 0.005666,
+      "n": 11074
+    },
+    {
+      "day": 18,
+      "point": 0.001458,
+      "ci_low": -0.002755,
+      "ci_high": 0.00567,
+      "n": 11074
+    },
+    {
+      "day": 19,
+      "point": 0.001433,
+      "ci_low": -0.002748,
+      "ci_high": 0.005613,
+      "n": 11074
+    },
+    {
+      "day": 20,
+      "point": 0.001251,
+      "ci_low": -0.002887,
+      "ci_high": 0.00539,
+      "n": 11074
+    },
+    {
+      "day": 21,
+      "point": 0.001203,
+      "ci_low": -0.002912,
+      "ci_high": 0.005319,
+      "n": 11074
+    },
+    {
+      "day": 22,
+      "point": 0.00092,
+      "ci_low": -0.003158,
+      "ci_high": 0.004997,
+      "n": 11074
+    },
+    {
+      "day": 23,
+      "point": 0.000989,
+      "ci_low": -0.00306,
+      "ci_high": 0.005039,
+      "n": 11074
+    },
+    {
+      "day": 24,
+      "point": 0.000962,
+      "ci_low": -0.003059,
+      "ci_high": 0.004983,
+      "n": 11074
+    },
+    {
+      "day": 25,
+      "point": 0.000916,
+      "ci_low": -0.003087,
+      "ci_high": 0.00492,
+      "n": 11074
+    },
+    {
+      "day": 26,
+      "point": 0.000904,
+      "ci_low": -0.003083,
+      "ci_high": 0.004891,
+      "n": 11074
+    },
+    {
+      "day": 27,
+      "point": 0.001064,
+      "ci_low": -0.002925,
+      "ci_high": 0.005052,
+      "n": 11074
+    },
+    {
+      "day": 28,
+      "point": 0.00096,
+      "ci_low": -0.002999,
+      "ci_high": 0.004919,
+      "n": 11074
+    },
+    {
+      "day": 29,
+      "point": 0.000803,
+      "ci_low": -0.003131,
+      "ci_high": 0.004737,
+      "n": 11074
+    }
+  ],
+  "ground_truth_rate": 0.0,
+  "horizon_days": 30
+}

@@ -1,0 +1,98 @@
+{
+  "experiment": "exp_reward_sizing",
+  "ground_truth": -0.321498,
+  "points": [
+    {
+      "allocation": 0.05,
+      "naive": {
+        "estimator": "naive",
+        "point": -0.259818,
+        "ci_low": -0.341496,
+        "ci_high": -0.178141,
+        "se": 0.041589,
+        "p_value": 7.894603894688369e-10,
+        "n_treatment": 482,
+        "n_control": 10525
+      },
+      "corrected": {
+        "estimator": "budget_split",
+        "point": -0.331285,
+        "ci_low": -0.415534,
+        "ci_high": -0.247037,
+        "se": 0.042898,
+        "p_value": 4.783104943025098e-14,
+        "n_treatment": 482,
+        "n_control": 10525
+      }
+    },
+    {
+      "allocation": 0.2,
+      "naive": {
+        "estimator": "naive",
+        "point": -0.252954,
+        "ci_low": -0.302655,
+        "ci_high": -0.203254,
+        "se": 0.025351,
+        "p_value": 3.3918825105322793e-23,
+        "n_treatment": 1974,
+        "n_control": 8881
+      },
+      "corrected": {
+        "estimator": "budget_split",
+        "point": -0.283674,
+        "ci_low": -0.335084,
+        "ci_high": -0.232263,
+        "se": 0.026223,
+        "p_value": 6.277095534649788e-27,
+        "n_treatment": 1974,
+        "n_control": 8881
+      }
+    },
+    {
+      "allocation": 0.35,
+      "naive": {
+        "estimator": "naive",
+        "point": -0.267418,
+        "ci_low": -0.312189,
+        "ci_high": -0.222647,
+        "se": 0.02284,
+        "p_value": 1.8759327488830994e-31,
+        "n_treatment": 3433,
+        "n_control": 7235
+      },
+      "corrected": {
+        "estimator": "budget_split",
+        "point": -0.295762,
+        "ci_low": -0.339292,
+        "ci_high": -0.252232,
+        "se": 0.022207,
+        "p_value": 4.007134511986431e-40,
+        "n_treatment": 3433,
+        "n_control": 7235
+      }
+    },
+    {
+      "allocation": 0.5,
+      "naive": {
+        "estimator": "naive",
+        "point": -0.203265,
+        "ci_low": -0.246829,
+        "ci_high": -0.159702,
+        "se": 0.022224,
+        "p_value": 7.037347994770169e-20,
+        "n_treatment": 4909,
+        "n_control": 5612
+      },
+      "corrected": {
+        "estimator": "budget_split",
+        "point": -0.277238,
+        "ci_low": -0.321759,
+        "ci_high": -0.232718,
+        "se": 0.022712,
+        "p_value": 5.075322660035521e-34,
+        "n_treatment": 4909,
+        "n_control": 5612
+      }
+    }
+  ]
+}

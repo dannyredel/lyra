@@ -1,0 +1,266 @@
+{
+  "id": "aa_null_1",
+  "advertiser": "adv_C",
+  "type": "aa",
+  "randomization": "user",
+  "primary_metric": "\u2014",
+  "allocation": 0.5,
+  "naive": {
+    "estimator": "naive",
+    "point": -0.00355,
+    "ci_low": -0.081926,
+    "ci_high": 0.074826,
+    "se": 0.039984,
+    "p_value": 0.9292614343130908,
+    "n_treatment": 5502,
+    "n_control": 5572
+  },
+  "corrected": null,
+  "ground_truth": 0.0,
+  "srm": {
+    "treatment": 5502,
+    "control": 5572,
+    "realized_share": 0.4968,
+    "ok": true
+  },
+  "decision": {
+    "status": "inconclusive",
+    "label": "No significant effect",
+    "reason": "CI covers zero"
+  },
+  "hypothesis": "A/A null (user-randomized): identical arms \u2014 must not flag.",
+  "guardrails": [
+    {
+      "name": "payout_cost",
+      "rel_change": -0.0056,
+      "threshold_rel": 0.1,
+      "direction": "not_above",
+      "breached": false,
+      "computed": true
+    },
+    {
+      "name": "advertiser_roas",
+      "computed": false,
+      "note": "TODO (M4 incrementality leg)"
+    },
+    {
+      "name": "user_retention_d7",
+      "computed": false,
+      "note": "TODO (long-term outcomes)"
+    }
+  ],
+  "timeseries": [
+    {
+      "day": 0,
+      "point": 0.002331,
+      "ci_low": -0.004037,
+      "ci_high": 0.0087,
+      "n": 11074
+    },
+    {
+      "day": 1,
+      "point": -0.000592,
+      "ci_low": -0.00575,
+      "ci_high": 0.004566,
+      "n": 11074
+    },
+    {
+      "day": 2,
+      "point": 4.2e-05,
+      "ci_low": -0.004442,
+      "ci_high": 0.004526,
+      "n": 11074
+    },
+    {
+      "day": 3,
+      "point": 0.00071,
+      "ci_low": -0.003438,
+      "ci_high": 0.004858,
+      "n": 11074
+    },
+    {
+      "day": 4,
+      "point": 1.7e-05,
+      "ci_low": -0.003911,
+      "ci_high": 0.003945,
+      "n": 11074
+    },
+    {
+      "day": 5,
+      "point": 0.000138,
+      "ci_low": -0.003631,
+      "ci_high": 0.003907,
+      "n": 11074
+    },
+    {
+      "day": 6,
+      "point": 5.9e-05,
+      "ci_low": -0.003576,
+      "ci_high": 0.003694,
+      "n": 11074
+    },
+    {
+      "day": 7,
+      "point": 0.00022,
+      "ci_low": -0.003294,
+      "ci_high": 0.003734,
+      "n": 11074
+    },
+    {
+      "day": 8,
+      "point": -5.7e-05,
+      "ci_low": -0.003487,
+      "ci_high": 0.003373,
+      "n": 11074
+    },
+    {
+      "day": 9,
+      "point": -0.000272,
+      "ci_low": -0.003619,
+      "ci_high": 0.003075,
+      "n": 11074
+    },
+    {
+      "day": 10,
+      "point": -0.000437,
+      "ci_low": -0.003687,
+      "ci_high": 0.002813,
+      "n": 11074
+    },
+    {
+      "day": 11,
+      "point": -6.3e-05,
+      "ci_low": -0.003268,
+      "ci_high": 0.003141,
+      "n": 11074
+    },
+    {
+      "day": 12,
+      "point": 5.2e-05,
+      "ci_low": -0.003103,
+      "ci_high": 0.003208,
+      "n": 11074
+    },
+    {
+      "day": 13,
+      "point": 2e-05,
+      "ci_low": -0.003103,
+      "ci_high": 0.003143,
+      "n": 11074
+    },
+    {
+      "day": 14,
+      "point": 0.000366,
+      "ci_low": -0.002696,
+      "ci_high": 0.003428,
+      "n": 11074
+    },
+    {
+      "day": 15,
+      "point": 0.000428,
+      "ci_low": -0.002599,
+      "ci_high": 0.003454,
+      "n": 11074
+    },
+    {
+      "day": 16,
+      "point": 0.00026,
+      "ci_low": -0.002738,
+      "ci_high": 0.003257,
+      "n": 11074
+    },
+    {
+      "day": 17,
+      "point": 9.6e-05,
+      "ci_low": -0.002861,
+      "ci_high": 0.003053,
+      "n": 11074
+    },
+    {
+      "day": 18,
+      "point": 6e-05,
+      "ci_low": -0.002874,
+      "ci_high": 0.002993,
+      "n": 11074
+    },
+    {
+      "day": 19,
+      "point": -4e-05,
+      "ci_low": -0.002936,
+      "ci_high": 0.002857,
+      "n": 11074
+    },
+    {
+      "day": 20,
+      "point": -0.000124,
+      "ci_low": -0.002998,
+      "ci_high": 0.002749,
+      "n": 11074
+    },
+    {
+      "day": 21,
+      "point": -5.9e-05,
+      "ci_low": -0.002909,
+      "ci_high": 0.002791,
+      "n": 11074
+    },
+    {
+      "day": 22,
+      "point": -0.000337,
+      "ci_low": -0.003162,
+      "ci_high": 0.002488,
+      "n": 11074
+    },
+    {
+      "day": 23,
+      "point": -6e-05,
+      "ci_low": -0.002859,
+      "ci_high": 0.002738,
+      "n": 11074
+    },
+    {
+      "day": 24,
+      "point": -7.3e-05,
+      "ci_low": -0.002831,
+      "ci_high": 0.002684,
+      "n": 11074
+    },
+    {
+      "day": 25,
+      "point": -0.00021,
+      "ci_low": -0.002932,
+      "ci_high": 0.002511,
+      "n": 11074
+    },
+    {
+      "day": 26,
+      "point": -0.000206,
+      "ci_low": -0.002894,
+      "ci_high": 0.002482,
+      "n": 11074
+    },
+    {
+      "day": 27,
+      "point": -0.000124,
+      "ci_low": -0.002784,
+      "ci_high": 0.002536,
+      "n": 11074
+    },
+    {
+      "day": 28,
+      "point": -0.000157,
+      "ci_low": -0.002795,
+      "ci_high": 0.00248,
+      "n": 11074
+    },
+    {
+      "day": 29,
+      "point": -0.000118,
+      "ci_low": -0.002731,
+      "ci_high": 0.002494,
+      "n": 11074
+    }
+  ],
+  "ground_truth_rate": 0.0,
+  "horizon_days": 30
+}

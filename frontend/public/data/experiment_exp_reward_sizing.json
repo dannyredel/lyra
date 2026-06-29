@@ -1,0 +1,275 @@
+{
+  "id": "exp_reward_sizing",
+  "advertiser": "adv_A",
+  "type": "reward_sizing",
+  "randomization": "user",
+  "primary_metric": "margin_per_active_user",
+  "allocation": 0.35,
+  "naive": {
+    "estimator": "naive",
+    "point": -0.267418,
+    "ci_low": -0.312189,
+    "ci_high": -0.222647,
+    "se": 0.02284,
+    "p_value": 1.8759327488829895e-31,
+    "n_treatment": 3433,
+    "n_control": 7235
+  },
+  "corrected": {
+    "estimator": "budget_split",
+    "point": -0.295762,
+    "ci_low": -0.339292,
+    "ci_high": -0.252232,
+    "se": 0.022207,
+    "p_value": 4.007134511986428e-40,
+    "n_treatment": 3433,
+    "n_control": 7235
+  },
+  "ground_truth": -0.321498,
+  "srm": {
+    "treatment": 3839,
+    "control": 7235,
+    "realized_share": 0.3467,
+    "ok": true
+  },
+  "decision": {
+    "status": "rolled_back",
+    "label": "Guardrail breach \u2014 rolled back",
+    "reason": "breached: payout_cost"
+  },
+  "hypothesis": "Raising the reward pass-through (+15%) increases conversions enough to lift margin per active user, despite a lower margin per conversion.",
+  "guardrails": [
+    {
+      "name": "payout_cost",
+      "rel_change": 0.6319,
+      "threshold_rel": 0.1,
+      "direction": "not_above",
+      "breached": true,
+      "computed": true
+    },
+    {
+      "name": "advertiser_roas",
+      "computed": false,
+      "note": "TODO (M4 incrementality leg)"
+    },
+    {
+      "name": "user_retention_d7",
+      "computed": false,
+      "note": "TODO (long-term outcomes)"
+    }
+  ],
+  "timeseries": [
+    {
+      "day": 0,
+      "point": -0.012366,
+      "ci_low": -0.0168,
+      "ci_high": -0.007932,
+      "n": 10668
+    },
+    {
+      "day": 1,
+      "point": -0.009869,
+      "ci_low": -0.01316,
+      "ci_high": -0.006577,
+      "n": 10668
+    },
+    {
+      "day": 2,
+      "point": -0.010847,
+      "ci_low": -0.013714,
+      "ci_high": -0.007981,
+      "n": 10668
+    },
+    {
+      "day": 3,
+      "point": -0.0098,
+      "ci_low": -0.012401,
+      "ci_high": -0.0072,
+      "n": 10668
+    },
+    {
+      "day": 4,
+      "point": -0.009782,
+      "ci_low": -0.012174,
+      "ci_high": -0.007389,
+      "n": 10668
+    },
+    {
+      "day": 5,
+      "point": -0.01023,
+      "ci_low": -0.012527,
+      "ci_high": -0.007933,
+      "n": 10668
+    },
+    {
+      "day": 6,
+      "point": -0.009786,
+      "ci_low": -0.011963,
+      "ci_high": -0.007608,
+      "n": 10668
+    },
+    {
+      "day": 7,
+      "point": -0.009562,
+      "ci_low": -0.011654,
+      "ci_high": -0.00747,
+      "n": 10668
+    },
+    {
+      "day": 8,
+      "point": -0.009082,
+      "ci_low": -0.011105,
+      "ci_high": -0.007059,
+      "n": 10668
+    },
+    {
+      "day": 9,
+      "point": -0.009158,
+      "ci_low": -0.011125,
+      "ci_high": -0.00719,
+      "n": 10668
+    },
+    {
+      "day": 10,
+      "point": -0.008873,
+      "ci_low": -0.010791,
+      "ci_high": -0.006954,
+      "n": 10668
+    },
+    {
+      "day": 11,
+      "point": -0.008867,
+      "ci_low": -0.010727,
+      "ci_high": -0.007006,
+      "n": 10668
+    },
+    {
+      "day": 12,
+      "point": -0.009018,
+      "ci_low": -0.010843,
+      "ci_high": -0.007193,
+      "n": 10668
+    },
+    {
+      "day": 13,
+      "point": -0.008734,
+      "ci_low": -0.010533,
+      "ci_high": -0.006935,
+      "n": 10668
+    },
+    {
+      "day": 14,
+      "point": -0.008793,
+      "ci_low": -0.01056,
+      "ci_high": -0.007027,
+      "n": 10668
+    },
+    {
+      "day": 15,
+      "point": -0.008738,
+      "ci_low": -0.010468,
+      "ci_high": -0.007008,
+      "n": 10668
+    },
+    {
+      "day": 16,
+      "point": -0.008841,
+      "ci_low": -0.010541,
+      "ci_high": -0.00714,
+      "n": 10668
+    },
+    {
+      "day": 17,
+      "point": -0.008923,
+      "ci_low": -0.010606,
+      "ci_high": -0.00724,
+      "n": 10668
+    },
+    {
+      "day": 18,
+      "point": -0.008778,
+      "ci_low": -0.010441,
+      "ci_high": -0.007114,
+      "n": 10668
+    },
+    {
+      "day": 19,
+      "point": -0.00869,
+      "ci_low": -0.010334,
+      "ci_high": -0.007045,
+      "n": 10668
+    },
+    {
+      "day": 20,
+      "point": -0.008813,
+      "ci_low": -0.010436,
+      "ci_high": -0.007191,
+      "n": 10668
+    },
+    {
+      "day": 21,
+      "point": -0.008715,
+      "ci_low": -0.010321,
+      "ci_high": -0.007109,
+      "n": 10668
+    },
+    {
+      "day": 22,
+      "point": -0.008739,
+      "ci_low": -0.010328,
+      "ci_high": -0.007149,
+      "n": 10668
+    },
+    {
+      "day": 23,
+      "point": -0.008733,
+      "ci_low": -0.010308,
+      "ci_high": -0.007159,
+      "n": 10668
+    },
+    {
+      "day": 24,
+      "point": -0.008785,
+      "ci_low": -0.010342,
+      "ci_high": -0.007227,
+      "n": 10668
+    },
+    {
+      "day": 25,
+      "point": -0.008802,
+      "ci_low": -0.010345,
+      "ci_high": -0.007259,
+      "n": 10668
+    },
+    {
+      "day": 26,
+      "point": -0.008783,
+      "ci_low": -0.010313,
+      "ci_high": -0.007253,
+      "n": 10668
+    },
+    {
+      "day": 27,
+      "point": -0.008802,
+      "ci_low": -0.010316,
+      "ci_high": -0.007287,
+      "n": 10668
+    },
+    {
+      "day": 28,
+      "point": -0.008803,
+      "ci_low": -0.010307,
+      "ci_high": -0.007299,
+      "n": 10668
+    },
+    {
+      "day": 29,
+      "point": -0.008914,
+      "ci_low": -0.010406,
+      "ci_high": -0.007422,
+      "n": 10668
+    }
+  ],
+  "ground_truth_rate": -0.010717,
+  "horizon_days": 30
+}
