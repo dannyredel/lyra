@@ -7,6 +7,11 @@ import { requiredN, powerAtN, mdeAtN } from "./power.js";
 import { abPreview, switchbackPreview, clusterPreview, marketplacePreview } from "./dgpViz.js";
 import { Info } from "./ui.jsx";
 import SampleSize from "./SampleSize.jsx";
+import { METRIC_CATALOG } from "./Metrics.jsx";
+
+// The dependent-variable choices, sourced from the governed Metric library (not free-text).
+const DV_METRICS = METRIC_CATALOG.filter((m) => ["proportion", "mean", "ratio"].includes(m.key));
+const KEY_TO_TYPE = { proportion: "proportion", mean: "continuous", ratio: "ratio" };
 
 const DESIGNS = {
   ab: { label: "A/B test", blurb: "Two arms with a planted effect — the workhorse.", estimator: "Two-proportion z / OLS" },
@@ -17,7 +22,7 @@ const DESIGNS = {
 const STEPS = ["Design", "Sample size", "Simulate", "Review"];
 
 const DEFAULTS = {
-  name: "", hypothesis: "", owner: "Daniel R.", design: "ab", metricType: "proportion",
+  name: "", hypothesis: "", owner: "Daniel R.", design: "ab", metricKey: "proportion", metricType: "proportion",
   mu: 0.2, sigma2: 1.0, trueEffect: 0.02, relMde: 5, qc: 50, alpha: 0.05, power: 0.8, twoSided: true,
   S: 1, C: 1, Gnim: 0, GnoNim: 0, rho: 0, days: 21, nPerDay: 1500,
   G: 60, n_g: 25, J: 50, H: 20, n_bar: 18, boost: 0.6, interferenceDesign: "cluster",
@@ -27,6 +32,7 @@ function seedForm(t) {
   if (!t) return { ...DEFAULTS };
   return {
     ...DEFAULTS, design: t.design ?? DEFAULTS.design, metricType: t.metric_type ?? DEFAULTS.metricType,
+    metricKey: t.metric_key ?? (t.metric_type === "continuous" ? "mean" : t.metric_type === "ratio" ? "ratio" : DEFAULTS.metricKey),
     mu: t.mu ?? DEFAULTS.mu, sigma2: t.sigma2 ?? DEFAULTS.sigma2, trueEffect: t.true_effect ?? DEFAULTS.trueEffect,
     relMde: t.rel_mde != null ? t.rel_mde * 100 : DEFAULTS.relMde, qc: t.q_control != null ? t.q_control * 100 : DEFAULTS.qc,
     G: t.G ?? DEFAULTS.G, n_g: t.n_g ?? DEFAULTS.n_g, J: t.J ?? DEFAULTS.J, H: t.H ?? DEFAULTS.H,
@@ -64,10 +70,11 @@ export default function NewExperiment({ onBack, onCreate, mode, template }) {
     return Array.from({ length: 24 }, (_, i) => { const N = Math.round(hi * (i + 1) / 24); return { N, power: +(powerAtN(N, p) * 100).toFixed(1) }; });
   }, [isAB, JSON.stringify(p), req?.nTotal, availableN]);
 
+  const dvMetric = DV_METRICS.find((m) => m.key === f.metricKey) || DV_METRICS[0];
   const create = () => {
     const spec = {
       name: f.name || "Untitled experiment", hypothesis: f.hypothesis, owner: f.owner, design: f.design,
-      metric_type: f.metricType, mu: +f.mu || 0, sigma2: p.sigma2, true_effect: +f.trueEffect || 0,
+      metric_type: f.metricType, metric_key: f.metricKey, mu: +f.mu || 0, sigma2: p.sigma2, true_effect: +f.trueEffect || 0,
       rel_mde: p.relMde, q_control: p.qc, alpha: p.alpha, power: p.power, two_sided: p.twoSided,
       n_success: p.S, n_comparisons: p.C, n_guardrail_nim: p.Gnim, rho: p.rho,
       days: +f.days || 0, n_per_day: +f.nPerDay || 0, G: +f.G || 0, n_g: +f.n_g || 0, J: +f.J || 0, H: +f.H || 0,
@@ -76,7 +83,7 @@ export default function NewExperiment({ onBack, onCreate, mode, template }) {
     spec.__row = {
       id: "exp_new_" + Date.now(), name: spec.name, hypothesis: f.hypothesis, owner: f.owner, state: "DRAFT",
       design: f.design === "ab" ? "user" : f.design, guardrails: [],
-      metric: { name: f.design === "ab" ? (p.binary ? "conversion rate" : "value") : f.design, type: f.metricType, class: "primary", direction: "up" },
+      metric: { name: dvMetric.name, type: f.metricType, key: f.metricKey, class: "primary", direction: "up" },
       power: { required_n: isAB ? req.nTotal : 0, current_n: availableN, powered, pct_powered: isAB && req.nTotal ? +Math.min(100, 100 * availableN / req.nTotal).toFixed(1) : 100 },
     };
     onCreate(spec);
@@ -103,6 +110,11 @@ export default function NewExperiment({ onBack, onCreate, mode, template }) {
           <div className="form-grid">
             <Field label="Design" info={<>Fixes the DGP world + estimator. <b>A/B</b> simple two-arm; <b>cluster</b> geo/market; <b>switchback</b> temporal; <b>marketplace</b> shared-budget cannibalization.</>}>
               <select value={f.design} onChange={txt("design")}>{Object.entries(DESIGNS).map(([k, d]) => <option key={k} value={k}>{d.label}</option>)}</select>
+            </Field>
+            <Field label="Primary metric (dependent variable)" info={<>The outcome you measure — picked from the governed <b>Metric library</b>, so its definition and estimator are fixed platform-wide (no ad-hoc "conversion rate").</>}>
+              <select value={f.metricKey} onChange={(e) => { const k = e.target.value; setF({ ...f, metricKey: k, metricType: KEY_TO_TYPE[k] }); }}>
+                {DV_METRICS.map((m) => <option key={m.key} value={m.key}>{m.name} · {m.type}</option>)}
+              </select>
             </Field>
             <Field label="Owner"><input value={f.owner} onChange={txt("owner")} /></Field>
             <Field label=""><input placeholder="Name (e.g. Reward sizing — Game C)" value={f.name} onChange={txt("name")} /></Field>
@@ -155,7 +167,7 @@ export default function NewExperiment({ onBack, onCreate, mode, template }) {
           <div className="card cardpad">
             <h3 className="section-t">Review</h3>
             <div className="kv"><span className="k">Design</span><span className="v">{DESIGNS[f.design].label}</span></div>
-            <div className="kv"><span className="k">Metric</span><span className="v">{isAB ? f.metricType : f.design}</span></div>
+            <div className="kv"><span className="k">Metric (dependent variable)</span><span className="v">{dvMetric.name} · {f.metricType}</span></div>
             <div className="kv"><span className="k">True effect (planted)</span><span className="v num">{isInterf ? "computed" : f.trueEffect}</span></div>
             <div className="kv"><span className="k">Allocation</span><span className="v">control {f.qc}% · treatment {100 - f.qc}%</span></div>
             <div className="kv"><span className="k">Run</span><span className="v">{f.days} days{isAB ? ` × ${(+f.nPerDay || 0).toLocaleString()}/day` : ""}</span></div>
@@ -189,16 +201,23 @@ function DgpPlot({ design, f, p }) {
 
   if (design === "ab") {
     const pv = abPreview({ binary: p.binary, mu: p.mu, effect: +f.trueEffect || 0, sigma: Math.sqrt(p.sigma2) });
-    return wrap("Control (grey) vs treatment (blue) outcomes at the effect you planted.",
+    const eff = +f.trueEffect || 0;
+    return wrap(p.binary
+      ? "Conversion rate, control (grey) vs treatment (blue) — the gap is the risk difference you planted."
+      : "Outcome density, control (grey) vs treatment (blue) — the dashed lines mark each group's mean; the gap is the effect.",
       pv.kind === "bars" ? (
         <BarChart data={pv.data} margin={{ top: 8, right: 10, bottom: 4, left: -12 }}>
-          <CartesianGrid stroke="#EEF2F7" vertical={false} /><XAxis dataKey="outcome" {...axis} /><YAxis {...axis} width={36} /><Tooltip {...tip} />
+          <CartesianGrid stroke="#EEF2F7" vertical={false} /><XAxis dataKey="outcome" {...axis} /><YAxis {...axis} width={36} tickFormatter={(v) => Math.round(v * 100) + "%"} /><Tooltip {...tip} formatter={(v) => (v * 100).toFixed(1) + "%"} />
           <Bar dataKey="control" fill="#94A3B8" radius={[3, 3, 0, 0]} /><Bar dataKey="treatment" fill="#1E6091" radius={[3, 3, 0, 0]} />
         </BarChart>
       ) : (
         <AreaChart data={pv.data} margin={{ top: 8, right: 10, bottom: 4, left: -12 }}>
           <CartesianGrid stroke="#EEF2F7" vertical={false} /><XAxis dataKey="x" {...axis} /><YAxis {...axis} width={28} /><Tooltip {...tip} />
-          <Area dataKey="control" stroke="#94A3B8" fill="#94A3B8" fillOpacity={0.18} /><Area dataKey="treatment" stroke="#1E6091" fill="#1E6091" fillOpacity={0.18} />
+          <Area dataKey="control" stroke="#94A3B8" strokeWidth={1.6} fill="#94A3B8" fillOpacity={0.18} isAnimationActive={false} />
+          <Area dataKey="treatment" stroke="#1E6091" strokeWidth={1.8} fill="#1E6091" fillOpacity={0.18} isAnimationActive={false} />
+          <ReferenceLine x={+p.mu.toFixed(2)} stroke="#94A3B8" strokeDasharray="3 3" strokeOpacity={0.85} />
+          <ReferenceLine x={+(p.mu + eff).toFixed(2)} stroke="#1E6091" strokeDasharray="3 3"
+            label={{ value: "+effect", fill: "#1E6091", fontSize: 10, position: "top" }} />
         </AreaChart>
       ));
   }

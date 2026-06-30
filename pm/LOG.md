@@ -1081,3 +1081,36 @@ UX: Phase 4 polish (logo, spacing, skeletons, copy) still pending. `PLAN_UX.md` 
 **UX redesign complete (Phases 1–4):** Home + study cases · 4-step create wizard (incl. the Spotify-style
 sample-size calculator) · interactive DGP plots · detailed-analytics view · logo/skeletons/cleanup. The
 platform is demo-ready across all surfaces. `PLAN_UX.md` is the record.
+
+## 2026-06-30 — PUBLISHED: app + docs live on Vercel, code on GitHub, auto-deploy wired
+
+(Between 06-16 and now: built **NB 11 observational** + `lyra/observational.py`, and a self-contained
+**music-marketing geo-lift/MMM identification lab** in `labs/music-marketing/` — both tracked in their own
+docs + memory; the lab is parked. This session = shipping the platform as a portfolio piece.)
+
+- **Published the app** → **https://lyra-five-sable.vercel.app** (static-snapshot Vercel deploy of
+  `frontend/dist`; read-only registry/scorecards/metrics/decisions + the live client-side power calculator).
+- **Polish pass** (harvested from Daniel's `labs/music-marketing/mvp-dashboard-prototype.html` type system):
+  Fraunces serif display + IBM Plex Mono labels/numbers + Inter body · a dismissible **demo-mode banner** ·
+  a **certified/ground-truth legend** on the scorecard · colored stat values · a real **mobile pass**
+  (sidebar → scrollable top-nav on phones) · an **About/credits footer** · a generated **1200×630 OG cover**
+  (Pillow + Windows Georgia) wired into the meta tags.
+- **User guide** (the big new artifact): a **13-chapter Quarto site** (`docs/`, DoubleML-guide style) — the
+  idea/harness/DGP-zoo + 11 method chapters + the 6 cases — each recycling a `notation/*.md` sheet's LaTeX +
+  the documented recovery numbers, in the app's navy/Fraunces/mono theme. Wrote the scaffold + Overview +
+  Harness + ATE as the template, then **fanned the other 12 out across parallel subagents** (one per chapter);
+  renders clean. Deployed → **https://lyra-docs-chi.vercel.app**. Cross-linked both ways with the app + Daniel's
+  portfolio.
+- **GitHub** (path B): hardened `.gitignore` (global `*.pdf`, `data/`, build output, scratch files — caught +
+  excluded ~11 copyrighted GeoLift/MMM PDFs before the first commit), rewrote the stale pre-pivot **README**
+  into a recruiter-facing one (pitch · OG cover · architecture · the 12-NB curriculum table · run/repo map),
+  added an **MIT LICENSE**, pushed to **https://github.com/dannyredel/lyra** (309 files, under his personal
+  `dannyredel` account — `dannyredel-tech` lacked push access).
+- **Vercel auto-deploy**: git-connected the `lyra` project (root dir `frontend`) → every `git push` redeploys.
+  🐞 **Real bug the auto-deploy surfaced:** the `data/` gitignore rule also matched `frontend/public/data/`, so
+  the static **snapshot was never committed** — the *manual* `vercel --prod` deploys worked only because they
+  uploaded the local `dist/`; the *git* build had no `chassis.json` → the deployed app hung on loading
+  skeletons. Fixed with a `.gitignore` negation (`!frontend/public/data/*.json`) + committed the snapshot.
+- **Next:** the **live FastAPI backend on Render** so create→run→decide runs online — plan written in
+  `pm/live-backend-plan.md` (de-risked: chassis runtime is a light `lyra` subset, no econml/pymc; needs its own
+  `requirements-backend.txt` since fastapi/uvicorn/statsmodels aren't in `pyproject`). Custom domain declined.

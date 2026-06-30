@@ -33,15 +33,21 @@ as a self-contained side lab** (distilled into NB 11); not part of the platform 
   Live app (local full loop): `uvicorn chassis.app:app --port 8000` + `cd frontend; npm run dev`.
   Tests: `python -m pytest`. (PowerShell: use `;` not `&&`.)
 
-## Phase P — Publish to a website (next focus)
+## Phase P — Published ✅ (2026-06-30)
+
+**Live:** app https://lyra-five-sable.vercel.app · guide https://lyra-docs-chi.vercel.app · repo
+https://github.com/dannyredel/lyra (README + MIT license). Vercel **auto-deploys on `git push`** (app
+project, root dir `frontend`).
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| P-01 | Refresh snapshot + confirm `npm run build` / `preview` is current & self-contained | TODO | regen `chassis.json`; sanity-check all surfaces read-only |
-| P-02 | Deploy static `frontend/dist` to a host (Vercel rec.) + SPA rewrites + verify live URL | TODO | the actual "publish" — fast win |
-| P-03 | Publish polish: Home/pitch copy, OG image + meta, mobile pass, demo-mode clarity | TODO | recruiter-readable in 30s; simulator-superpower unmissable |
-| P-04 | About/credits + links (GitHub, LinkedIn, the notebook curriculum / study site) | TODO | show the depth behind the demo |
-| P-05 | (optional) Live backend on Render/Fly so create→run→decide works online | TODO | fast-follow; cold-starts + in-memory state |
+| P-01 | Static build self-contained + snapshot refreshed | **DONE** | |
+| P-02 | Deploy app to Vercel (+ SPA rewrites) | **DONE** | `lyra-five-sable.vercel.app` |
+| P-03 | Publish polish | **DONE** | Fraunces/IBM-Plex-Mono type system · demo banner · certified/truth legend · colored stats · mobile top-nav · OG cover (1200×630) |
+| P-04 | About/credits footer + links | **DONE** | Portfolio · GitHub · LinkedIn · Email; guide cross-links |
+| P-05 | **User guide** (Quarto) | **DONE** | 13-chapter DoubleML-style site recycling the notation sheets → `docs/` → `lyra-docs-chi.vercel.app` |
+| P-06 | GitHub + auto-deploy | **DONE** | hardened `.gitignore` (PDFs/data/build excluded), pushed, Vercel git-connected. **Fixed:** `data/` rule was excluding the static snapshot → deployed app hung on skeletons (negation added) |
+| **→** | **Live backend (Render)** for create→run→decide online | **NEXT** | plan in [`pm/live-backend-plan.md`](live-backend-plan.md) (B-40) |
 
 **Lyra engine — the new `lyra/` package (notebooks-first):**
 | NB | Topic | Notebook | Promoted to | Status |

@@ -1,10 +1,64 @@
 import React, { useState } from "react";
 import katex from "katex";
+import { AreaChart, Area, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from "recharts";
 import { requiredN } from "./power.js";
 import { Info } from "./ui.jsx";
 
 function Tex({ children, block }) {
   return <span dangerouslySetInnerHTML={{ __html: katex.renderToString(children, { throwOnError: false, displayMode: !!block }) }} />;
+}
+
+const GREY = "#94A3B8", BLUE = "#1E6091";
+const _grid = (lo, hi, n = 90) => Array.from({ length: n }, (_, i) => lo + ((hi - lo) * i) / (n - 1));
+const _npdf = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * Math.sqrt(2 * Math.PI));
+
+// Two reactive views of the same design: the per-unit population (control vs treatment, heavy overlap)
+// and the sampling distribution of each group MEAN at the required N (now separated — that's what N buys).
+function DistPanel({ mu, delta, sigma2, rho, nC, nT, binary }) {
+  const sd = Math.sqrt(Math.max(sigma2, 1e-12));
+  const seC = Math.sqrt((sigma2 * (1 - rho)) / Math.max(nC, 1));
+  const seT = Math.sqrt((sigma2 * (1 - rho)) / Math.max(nT, 1));
+  const mkt = mu + delta, w = Math.max(seC, seT, 1e-9);
+  const pop = _grid(Math.min(mu, mkt) - 3.6 * sd, Math.max(mu, mkt) + 3.6 * sd)
+    .map((x) => ({ x, c: _npdf(x, mu, sd), t: _npdf(x, mkt, sd) }));
+  const mean = _grid(Math.min(mu, mkt) - 4.2 * w, Math.max(mu, mkt) + 4.2 * w)
+    .map((x) => ({ x, c: _npdf(x, mu, seC), t: _npdf(x, mkt, seT) }));
+  const fmt = (v) => (binary ? (v * 100).toFixed(0) + "%" : (+v).toFixed(2));
+  const Chart = ({ data, refs }) => (
+    <ResponsiveContainer width="100%" height={150}>
+      <AreaChart data={data} margin={{ top: 6, right: 10, bottom: 0, left: 6 }}>
+        <XAxis dataKey="x" type="number" domain={["dataMin", "dataMax"]} tickFormatter={fmt}
+          tick={{ fill: "#6B7A90", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "#E7ECF4" }} />
+        <YAxis hide domain={[0, "dataMax"]} />
+        <Area dataKey="c" stroke={GREY} strokeWidth={1.6} fill={GREY} fillOpacity={0.22} isAnimationActive={false} />
+        <Area dataKey="t" stroke={BLUE} strokeWidth={1.8} fill={BLUE} fillOpacity={0.20} isAnimationActive={false} />
+        {refs.map((x, i) => <ReferenceLine key={i} x={x} stroke={i ? BLUE : GREY} strokeDasharray="4 3" strokeOpacity={0.7} />)}
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+  return (
+    <div className="card cardpad" style={{ marginTop: 16 }}>
+      <div className="card-h-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <h3 className="section-t" style={{ margin: 0 }}>What that sample buys you</h3>
+        <div className="chart-legend" style={{ display: "flex", gap: 14, fontSize: 11, color: "var(--muted)" }}>
+          <span><i style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: GREY, marginRight: 5 }} />control</span>
+          <span><i style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: BLUE, marginRight: 5 }} />treatment (+δ)</span>
+        </div>
+      </div>
+      <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 10 }}>
+        <div>
+          <div className="note" style={{ marginBottom: 2 }}><b>Individual outcomes</b> — the population</div>
+          <Chart data={pop} refs={[mu, mkt]} />
+          <div className="note" style={{ marginTop: 2 }}>The effect shifts the mean by δ, but individuals overlap heavily — one user tells you almost nothing.</div>
+        </div>
+        <div>
+          <div className="note" style={{ marginBottom: 2 }}><b>Group means at N</b> — the sampling distribution</div>
+          <Chart data={mean} refs={[mu, mkt]} />
+          <div className="note" style={{ marginTop: 2 }}>Averaging the required N units sharpens each group mean until the two separate — enough to detect δ at your power.</div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Slider({ label, info, value, min, max, step, onChange, fmt }) {
@@ -90,6 +144,9 @@ export default function SampleSize({ f, setF }) {
           control, the required control group is {r.nPerArm.toLocaleString()} and treatment is {(r.nTotal - r.nPerArm).toLocaleString()}.</div>
         <label className="ssc-check" style={{ marginTop: 12 }}><input type="checkbox" checked={showF} onChange={(e) => setShowF(e.target.checked)} /> Show detailed formulas</label>
       </div>
+
+      <DistPanel mu={p.mu} delta={delta} sigma2={sigma2} rho={p.rho}
+        nC={r.nPerArm} nT={r.nTotal - r.nPerArm} binary={binary} />
 
       {showF && (
         <div className="card cardpad formulas" style={{ marginTop: 16 }}>

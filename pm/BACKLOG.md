@@ -3,6 +3,21 @@
 Prioritized queue of work not yet on the PROGRESS board. When an item is scheduled, move it to
 PROGRESS.md (give it a `T-NN`) and leave a pointer here. Priority: P0 (next) · P1 · P2 · P3 (someday).
 
+## P0 — portfolio / publishing (live as of 2026-06-30)
+Live: **app** https://lyra-five-sable.vercel.app · **guide** https://lyra-docs-chi.vercel.app · **repo**
+https://github.com/dannyredel/lyra · Vercel **auto-deploy** on `git push` (app root dir = `frontend`).
+- **B-40 — Live backend (FastAPI → Render)** so create→run→decide runs online. **Plan written:
+  [`pm/live-backend-plan.md`](live-backend-plan.md)** — execute next session. The static demo stays the fallback.
+- **B-41** Docs auto-deploy via a GitHub Action (install Quarto → `quarto render docs` → deploy `_site` to the
+  `lyra-docs` Vercel project with a token). Today the docs deploy manually (`cd docs/_site; vercel --prod`).
+- **B-42** (minor) Commit attribution: commits show GitHub user `dannyredel-tech` (the email
+  `dannyredel@gmail.com` is linked there, not to `dannyredel`). Repo is correctly under `dannyredel`. Fix only
+  if the avatar bothers you — point `git config user.email` to an email verified on `dannyredel`.
+- **B-43** Custom domain — **declined** (staying on `*.vercel.app`).
+- ⚠️ **Watch-out (resolved B-39):** never let a broad `data/` gitignore rule (or build-output ignores) swallow
+  `frontend/public/data/chassis.json` — the git build needs the static snapshot committed or the deployed app
+  hangs on skeletons. Negation added in `.gitignore`.
+
 ## P1 — fast-follows once the MVP spine exists
 - **B-01** Power/MDE calculator off the choice model (trivial since we control N). — PROPOSAL §7
 - **B-02** SRM check as a reusable diagnostic + dashboard health flag. — EVENT_LOG §6

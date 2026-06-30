@@ -1,0 +1,77 @@
+---
+title: "Lyra — experimentation you can trust"
+description: "I built an experimentation platform where every estimator is certified against a known ground truth — because on real data, you can never check whether your A/B test is actually right."
+date: 2026-06-30
+categories: [causal inference, experimentation, platform, python]
+image: og-cover.png
+# image: copy frontend/public/og-cover.png from the lyra repo into this post's folder
+---
+
+> **[▶ Live demo](https://lyra-five-sable.vercel.app)** · **[📖 User guide](https://lyra-docs-chi.vercel.app)** · **[💻 Code](https://github.com/dannyredel/lyra)**
+
+Every experimentation platform faces the same uncomfortable problem: **the treatment effect is never
+observed.** You see an estimate and a confidence interval, but you can never check them against the truth —
+the counterfactual is missing by definition. So the most important question, *"is this estimator actually
+correct here?"*, is on real data simply **unanswerable**. Teams ship A/B results and *hope* the method was
+unbiased.
+
+**Lyra** is my attempt to dissolve that problem by inverting it: instead of estimating an unknown effect, it
+runs every experiment on a **simulator whose ground truth I set**. The estimator sees only the observable
+data; a Monte-Carlo harness then checks whether it **recovers the known effect with correct interval
+coverage** — before the method is trusted.
+
+$$
+\text{coverage} = \Pr\big(\tau \in \widehat{\mathrm{CI}}_{1-\alpha}\big) \overset{!}{=} 1-\alpha
+$$
+
+That single check — uncheckable on real data — becomes the **gate**. An estimator that recovers the planted
+effect at its nominal rate earns a `certified` badge; one that doesn't is flagged, and its bias becomes a
+*measured, asserted quantity* rather than a worry. It turns soft methodological debates ("is the naive A/B
+biased under marketplace interference?") into hard pass/fail checks.
+
+## What it is
+
+Lyra has three layers, kept deliberately decoupled:
+
+- **An inference engine** — a 12-chapter curriculum of estimators, each built notebook-first then promoted
+  behind a small `Estimator`/`DGP` contract and **certified by the harness**: doubly-robust DML, CUPED &
+  ratio-metric variance, cluster-robust standard errors, interference designs, switchback + variance
+  reduction, always-valid (peek-safe) confidence sequences, power & decision rules, CATE/heterogeneity,
+  policy learning & off-policy evaluation, observational sensitivity analysis, and incrementality —
+  validated all the way to the real **Criteo Uplift RCT (13.9M rows)**.
+- **A thin-but-real chassis** (FastAPI) — deterministic assignment, a **governed metric library**, a
+  lifecycle state machine, and a scorecard with the certified-vs-truth badge, an always-valid sequence, SRM,
+  and portfolio FDR. The operative *create → run → decide* loop.
+- **A React dashboard** — six industry study cases, a four-step create wizard with a sample-size calculator
+  and live, parameter-reactive distribution plots, and a detailed-analytics scorecard (the Monte-Carlo
+  sampling distribution, a coverage caterpillar).
+
+The headline idea recurs everywhere: **estimators *guess*, DGPs *know*, and the harness *certifies*.** Build
+that loop once, and every method added later earns a "certified: yes/no" badge for free.
+
+## A concrete example
+
+Spin up a **marketplace A/B** in the wizard with shared-budget cannibalization. The naive user-level test
+reads a confident, *wrong* uplift — and the scorecard flags it **uncertified** (its interval misses the
+planted truth). Switch to a cluster-safe design and the same harness shows it **certified**, recovering the
+true global effect. The bias isn't argued; it's *shown*, against a truth only the simulator knows.
+
+## How I built it
+
+It's Python (PyMC, econml, statsmodels) for the engine, FastAPI for the chassis, React + Vite for the
+dashboard, and Quarto for the documentation — with a test suite (65 passing) where **every estimator ships
+with a recovery test**, and the naive-bias / A-A-null controls are asserted, not assumed. I worked
+**notebooks-first**: each method is prototyped raw to see the mechanics, then hardened behind the protocol
+and the harness gate, then promoted. The companion **[user guide](https://lyra-docs-chi.vercel.app)** writes
+each method up properly — the problem, the math, and the recovery evidence that certifies it.
+
+## Why it matters to me
+
+Most of my work is causal inference and experimentation, and the thing I keep coming back to is **epistemic
+honesty**: knowing *whether* a number can be trusted, not just producing one. Lyra is that principle made
+into a product — a platform that can prove its own results are right, on every experiment, because it
+authored the world they live in.
+
+**Take a look:** the **[live dashboard](https://lyra-five-sable.vercel.app)** to click through it, the
+**[user guide](https://lyra-docs-chi.vercel.app)** for the methods, and the
+**[code on GitHub](https://github.com/dannyredel/lyra)**.

@@ -160,7 +160,7 @@ export function Sidebar({ section, onNav, mode }) {
         {item("experiments", "Experiments")}
         {item("metrics", "Metrics")}
         {item("decisions", "Decisions")}
-        {item("assignment", "Assignment")}
+        {item("health", "Health")}
       </nav>
       <div className="foot">
         {mode && <div style={{ marginBottom: 8 }}>

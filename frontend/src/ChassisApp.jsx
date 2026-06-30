@@ -7,7 +7,7 @@ import Scorecard from "./Scorecard.jsx";
 import NewExperiment from "./NewExperiment.jsx";
 import Metrics from "./Metrics.jsx";
 import Decisions from "./Decisions.jsx";
-import Assignment from "./Assignment.jsx";
+import Health from "./Health.jsx";
 import { api } from "./api.js";
 
 export default function ChassisApp() {
@@ -95,11 +95,11 @@ export default function ChassisApp() {
         ? <Scorecard data={detail} mode={mode} onBack={() => nav("experiments")} onTransition={(to, extra) => onTransition(selected, to, extra)} />
         : <Registry experiments={data.experiments} meta={data.meta} onSelect={open} onNew={() => startCreate()} />;
   } else if (section === "metrics") {
-    content = <Metrics />;
+    content = <Metrics experiments={data.experiments} />;
   } else if (section === "decisions") {
     content = <Decisions experiments={data.experiments} onSelect={open} />;
   } else {
-    content = <Assignment experiments={data.experiments} />;
+    content = <Health experiments={data.experiments} />;
   }
 
   return (

@@ -18,8 +18,8 @@ export default function Home({ experiments, onOpenCase, onNew }) {
       <div className="hero">
         <span className="hero-badge">✓ Lyra Verified</span>
         <h1>Experimentation you can <em>trust</em>.</h1>
-        <p>Every experiment runs on a simulator with a <b>known ground truth</b> — so Lyra doesn't just
-          report a result, it <b>certifies</b> the result is correct. Something no real platform can do.</p>
+        <p>Every experiment runs on a simulator with a <b>known ground truth</b> — so each estimate can be
+          checked against the real effect, and every result carries the <b>coverage</b> that backs it up.</p>
         <div className="hero-cta">
           <button className="btn primary" onClick={onNew}>+ New experiment</button>
           <a className="btn" href={LINKS.guide} target="_blank" rel="noreferrer"
@@ -31,7 +31,7 @@ export default function Home({ experiments, onOpenCase, onNew }) {
 
       <div className="how-strip">
         {[
-          ["1", "Author the world", "Set the true effect in a data-generating process — you own the ground truth."],
+          ["1", "Author the world", "Set the true effect in a data-generating process — the answer the experiment must recover."],
           ["2", "Run the experiment", "Assignment · governed metrics · the right estimator for the design — the real chassis."],
           ["3", "Certify against truth", "A Monte-Carlo harness checks the estimate recovers the known effect at the right coverage."],
         ].map(([n, t, d]) => (
@@ -61,8 +61,7 @@ export default function Home({ experiments, onOpenCase, onNew }) {
             <div className="foot-brand"><Logo size={24} /> Lyra</div>
             <p>A thin-but-real experimentation platform with a deep inference engine. Because every
               experiment runs on a simulator with a <b>known ground truth</b>, every estimator is
-              <b> validated against that truth</b> via a Monte-Carlo recovery harness — a guarantee no
-              live platform can offer.</p>
+              <b> validated against that truth</b> via a Monte-Carlo recovery harness.</p>
           </div>
           <div>
             <div className="foot-h">Under the hood</div>
